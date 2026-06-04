@@ -62,7 +62,18 @@ function versionHtmlAssets(html) {
     return `${attribute}="${url}?v=${version}"`;
   });
 }
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
+function injectSiteName(html) {
+  return html.replaceAll('__SITE_NAME__', escapeHtml(process.env.NAME || 'A Life Remembered'));
+}
 function parseCookies(cookieHeader = '') {
   return cookieHeader
     .split(';')
@@ -417,8 +428,9 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (extension === '.html') {
+    const html = injectSiteName(versionHtmlAssets(fs.readFileSync(filePath, 'utf8')));
     response.writeHead(200, headers);
-    response.end(versionHtmlAssets(fs.readFileSync(filePath, 'utf8')));
+    response.end(html);
     return;
   }
 
