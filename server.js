@@ -59,12 +59,18 @@ function randomTransition() {
   return transitionTypes[Math.floor(Math.random() * transitionTypes.length)];
 }
 
+function normalizeRotation(value) {
+  const numericValue = Number(value) || 0;
+  return ((numericValue % 360) + 360) % 360;
+}
+
 function defaultSlide(file) {
   return {
     file,
     transition: randomTransition(),
     duration: 6,
-    hidden: false
+    hidden: false,
+    rotation: 0
   };
 }
 
@@ -94,7 +100,8 @@ function mergedConfig() {
         ? slide.transition
         : randomTransition(),
       duration: Math.max(2, Math.min(60, Number(slide.duration) || 6)),
-      hidden: Boolean(slide.hidden)
+      hidden: Boolean(slide.hidden),
+      rotation: normalizeRotation(slide.rotation)
     }));
   const orderedSet = new Set(orderedSlides.map((slide) => slide.file));
   const newSlides = photos.filter((photo) => !orderedSet.has(photo)).map(defaultSlide);
@@ -134,7 +141,8 @@ function rebuildConfigFromAssets() {
         ? existing.transition
         : randomTransition(),
       duration: Math.max(2, Math.min(60, Number(existing?.duration) || 6)),
-      hidden: Boolean(existing?.hidden)
+      hidden: Boolean(existing?.hidden),
+      rotation: normalizeRotation(existing?.rotation)
     };
   });
 
@@ -160,7 +168,8 @@ function saveConfig(payload) {
         ? slide.transition
         : randomTransition(),
       duration: Math.max(2, Math.min(60, Number(slide.duration) || 6)),
-      hidden: Boolean(slide.hidden)
+      hidden: Boolean(slide.hidden),
+      rotation: normalizeRotation(slide.rotation)
     }));
   const cleanSet = new Set(cleanSlides.map((slide) => slide.file));
   photos.filter((photo) => !cleanSet.has(photo)).forEach((photo) => cleanSlides.push(defaultSlide(photo)));

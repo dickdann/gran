@@ -28,6 +28,10 @@ function clearTransitionClasses(layer) {
   Object.values(transitionClasses).forEach((className) => layer.classList.remove(className));
 }
 
+function applyRotation(layer, slide) {
+  layer.style.setProperty('--photo-rotation', `${Number(slide?.rotation) || 0}deg`);
+}
+
 function showSlide(index, instant = false) {
   if (!slides.length) {
     stage.classList.add('empty-stage');
@@ -41,6 +45,7 @@ function showSlide(index, instant = false) {
 
   clearTransitionClasses(nextLayer);
   nextLayer.src = assetUrl(slide.file);
+  applyRotation(nextLayer, slide);
   nextLayer.className = `slide-image ${instant ? '' : transitionClass}`.trim();
 
   requestAnimationFrame(() => {
@@ -79,6 +84,7 @@ async function start() {
     return;
   }
 
+  applyRotation(layers[activeLayer], slides[0]);
   layers[activeLayer].src = assetUrl(slides[0].file);
   layers[activeLayer].classList.add('active');
   timer = window.setTimeout(nextSlide, Math.max(2, Number(slides[0].duration) || 6) * 1000);

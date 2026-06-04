@@ -25,6 +25,8 @@ const uploadStatus = document.getElementById('uploadStatus');
 const photoModal = document.getElementById('photoModal');
 const photoModalImage = document.getElementById('photoModalImage');
 const photoModalClose = document.getElementById('photoModalClose');
+const photoRotateButton = document.getElementById('photoRotateButton');
+const photoDeleteButton = document.getElementById('photoDeleteButton');
 
 let slides = [];
 let hero = '';
@@ -32,6 +34,15 @@ let draggedIndex = null;
 
 function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function normalizeRotation(value) {
+  const numericValue = Number(value) || 0;
+  return ((numericValue % 360) + 360) % 360;
+}
+
+function rotationStyle(value) {
+  return `rotate(${normalizeRotation(value)}deg)`;
 }
 
 function unlock(token) {
@@ -55,7 +66,7 @@ function renderRows() {
       <td><button class="drag-handle" type="button" aria-label="Move ${slide.file}">::</button></td>
       <td>
         <button class="thumbnail-button" type="button" data-open-photo="${slide.file}" aria-label="Open ${slide.file} in full size">
-          <img class="admin-thumb" src="${assetUrl(slide.file)}" alt="Preview of ${slide.file}">
+          <img class="admin-thumb" src="${assetUrl(slide.file)}" alt="Preview of ${slide.file}" style="transform: ${rotationStyle(slide.rotation)}; transform-origin: center center;">
         </button>
       </td>
       <td class="filename-cell">${slide.file}</td>
@@ -68,8 +79,11 @@ function renderRows() {
 }
 
 function openPhotoModal(file) {
+  const slide = slides.find((entry) => entry.file === file);
+  photoModalImage.dataset.file = file;
   photoModalImage.src = assetUrl(file);
   photoModalImage.alt = file;
+  photoModalImage.style.transform = rotationStyle(slide?.rotation);
   photoModal.hidden = false;
   photoModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -79,6 +93,8 @@ function closePhotoModal() {
   photoModal.hidden = true;
   photoModal.setAttribute('aria-hidden', 'true');
   photoModalImage.removeAttribute('src');
+  photoModalImage.removeAttribute('data-file');
+  photoModalImage.style.transform = '';
   document.body.classList.remove('modal-open');
 }
 
@@ -106,18 +122,14 @@ async function loadConfig() {
   saveStatus.textContent = `${slides.length} photos ready.`;
 }
 
-async function saveConfig() {
-  captureRows();
-  saveButton.disabled = true;
-  saveStatus.textContent = 'Saving...';
-
+async function persistConfig(nextSlides = slides, nextHero = hero) {
   const response = await fetch('/api/config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
     },
-    body: JSON.stringify({ hero, slides })
+    body: JSON.stringify({ hero: nextHero, slides: nextSlides })
   });
 
   if (!response.ok) {
@@ -128,14 +140,25 @@ async function saveConfig() {
     passwordInput.focus();
     saveStatus.textContent = 'Session expired. Enter the admin password again.';
     saveButton.disabled = false;
-    return;
+    return null;
   }
 
   const config = await response.json();
   slides = config.slides || [];
   hero = config.hero || slides[0]?.file || '';
   renderRows();
-  saveStatus.textContent = 'Saved.';
+  return config;
+}
+
+async function saveConfig() {
+  captureRows();
+  saveButton.disabled = true;
+  saveStatus.textContent = 'Saving...';
+
+  const config = await persistConfig(slides, hero);
+  if (config) {
+    saveStatus.textContent = 'Saved.';
+  }
   saveButton.disabled = false;
 }
 
@@ -215,6 +238,44 @@ photoModal.addEventListener('click', (event) => {
 });
 
 photoModalClose.addEventListener('click', closePhotoModal);
+
+photoRotateButton.addEventListener('click', async () => {
+  const file = photoModalImage.dataset.file;
+  if (!file) {
+    return;
+  }
+
+  const slide = slides.find((entry) => entry.file === file);
+  if (!slide) {
+    return;
+  }
+
+  slide.rotation = (normalizeRotation(slide.rotation) + 270) % 360;
+  photoModalImage.style.transform = rotationStyle(slide.rotation);
+  saveStatus.textContent = 'Rotating photo...';
+
+  const config = await persistConfig(slides, hero);
+  if (config) {
+    saveStatus.textContent = `Rotated ${file}.`;
+  }
+});
+
+photoDeleteButton.addEventListener('click', async () => {
+  const file = photoModalImage.dataset.file;
+  if (!file || !window.confirm('Delete this photo from the slideshow?')) {
+    return;
+  }
+
+  const nextSlides = slides.filter((entry) => entry.file !== file);
+  const nextHero = hero === file ? nextSlides[0]?.file || '' : hero;
+  saveStatus.textContent = 'Deleting photo...';
+
+  const config = await persistConfig(nextSlides, nextHero);
+  if (config) {
+    closePhotoModal();
+    saveStatus.textContent = 'Photo deleted.';
+  }
+});
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !photoModal.hidden) {

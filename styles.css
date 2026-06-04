@@ -409,7 +409,7 @@ h1 {
   height: 100%;
   object-fit: contain;
   opacity: 0;
-  transform: scale(1);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1);
   filter: none;
   clip-path: inset(0 0 0 0);
   transition: opacity 1500ms ease, transform 1800ms ease, filter 1600ms ease, clip-path 1700ms ease;
@@ -418,54 +418,56 @@ h1 {
 
 .slide-image.active {
   opacity: 1;
-  transform: scale(1);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1);
   filter: blur(0);
   clip-path: inset(0 0 0 0);
 }
 
 .enter-fade-through {
   opacity: 0;
-  transform: scale(1.015);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1.015);
 }
 
 .enter-dissolve {
   opacity: 0;
   filter: saturate(0.72) contrast(0.94);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1);
 }
 
 .enter-slide-left {
   opacity: 0;
-  transform: translateX(5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateX(5%) scale(1.01);
 }
 
 .enter-slide-right {
   opacity: 0;
-  transform: translateX(-5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateX(-5%) scale(1.01);
 }
 
 .enter-slide-up {
   opacity: 0;
-  transform: translateY(5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateY(5%) scale(1.01);
 }
 
 .enter-zoom-in {
   opacity: 0;
-  transform: scale(0.96);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(0.96);
 }
 
 .enter-zoom-out {
   opacity: 0;
-  transform: scale(1.05);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1.05);
 }
 
 .enter-blur-fade {
   opacity: 0;
   filter: blur(16px) saturate(0.82);
+  transform: rotate(var(--photo-rotation, 0deg)) scale(1);
 }
 
 .enter-lift {
   opacity: 0;
-  transform: translateY(3%) scale(0.985);
+  transform: rotate(var(--photo-rotation, 0deg)) translateY(3%) scale(0.985);
   filter: brightness(1.08);
 }
 
@@ -506,6 +508,17 @@ h1 {
   gap: 12px;
 }
 
+.photo-modal-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.photo-modal-action {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
 .photo-modal-close {
   width: 40px;
   height: 40px;
@@ -528,6 +541,7 @@ h1 {
   object-fit: contain;
   border-radius: 12px;
   background: linear-gradient(135deg, #ebe4d9, #fdfaf4);
+  transform-origin: center center;
 }
 
 .player-home-button {

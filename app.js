@@ -5,13 +5,21 @@ function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
 }
 
+function normalizeRotation(value) {
+  const numericValue = Number(value) || 0;
+  return ((numericValue % 360) + 360) % 360;
+}
+
 async function loadHome() {
   const response = await fetch('/api/config');
   const config = await response.json();
   const hero = config.hero || config.slides?.[0]?.file;
 
   if (hero) {
+    const slide = config.slides?.find((entry) => entry.file === hero);
     heroPhoto.src = assetUrl(hero);
+    heroPhoto.style.transform = `rotate(${normalizeRotation(slide?.rotation)}deg)`;
+    heroPhoto.style.transformOrigin = 'center center';
   } else {
     heroPhoto.removeAttribute('src');
     heroPhoto.alt = 'No memorial photograph selected';
