@@ -118,6 +118,7 @@ async function createThumbnailIfMissing(filePath) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   const image = await Jimp.read(filePath);
   await image.scaleToFit({ w: 200, h: 200 }).write(destination);
+  console.log("Created thumbnail for", filePath);
   return destination;
 }
 
