@@ -95,7 +95,10 @@ function parseCookies(cookieHeader = '') {
 function getAdminToken(request) {
   const authorization = request.headers.authorization || '';
   if (authorization.startsWith('Bearer ')) {
-    return authorization.slice('Bearer '.length);
+    const token = authorization.slice('Bearer '.length).trim();
+    if (token) {
+      return token;
+    }
   }
 
   return parseCookies(request.headers.cookie || '').adminToken || '';
@@ -356,6 +359,18 @@ async function handleApi(request, response, pathname) {
     } catch (error) {
       sendJson(response, 400, { error: error.message });
     }
+    return true;
+  }
+
+  if (request.method === 'GET' && pathname === '/api/session') {
+    if (getAdminToken(request) !== adminToken) {
+      sendJson(response, 401, { authenticated: false, error: 'Unauthorized' }, {
+        'Set-Cookie': 'adminToken=; Path=/; Max-Age=0; SameSite=Lax'
+      });
+      return true;
+    }
+
+    sendJson(response, 200, { authenticated: true });
     return true;
   }
 

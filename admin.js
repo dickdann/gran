@@ -54,8 +54,33 @@ function unlock(token) {
   sessionStorage.setItem('adminToken', token);
   adminShell.classList.remove('locked');
   passwordPanel.hidden = true;
+  passwordError.textContent = '';
   window.scrollTo(0, 0);
   loadConfig();
+}
+
+function clearStoredAuth() {
+  sessionStorage.removeItem('adminToken');
+  document.cookie = 'adminToken=; Path=/; Max-Age=0; SameSite=Lax';
+}
+
+function lockForLogin(message = '') {
+  clearStoredAuth();
+  adminShell.classList.add('locked');
+  passwordPanel.hidden = false;
+  passwordInput.value = '';
+  passwordError.textContent = message;
+  saveStatus.textContent = message;
+  passwordInput.focus();
+}
+
+function handleUnauthorized(response, message = 'Session expired. Enter the admin password again.') {
+  if (response.status !== 401) {
+    return false;
+  }
+
+  lockForLogin(message);
+  return true;
 }
 
 function transitionOptions(selected) {
@@ -137,18 +162,16 @@ async function persistConfig(nextSlides = slides, nextHero = hero) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
+      Authorization: `Bearer ${getAuthToken() || ''}`
     },
     body: JSON.stringify({ hero: nextHero, slides: nextSlides })
   });
 
   if (!response.ok) {
-    sessionStorage.removeItem('adminToken');
-    adminShell.classList.add('locked');
-    passwordPanel.hidden = false;
-    passwordInput.value = '';
-    passwordInput.focus();
-    saveStatus.textContent = 'Session expired. Enter the admin password again.';
+    if (!handleUnauthorized(response)) {
+      const data = await response.json().catch(() => ({}));
+      saveStatus.textContent = data.error || 'Could not save changes.';
+    }
     saveButton.disabled = false;
     return null;
   }
@@ -202,13 +225,28 @@ function readSessionToken() {
   return decodeURIComponent(cookieEntry.slice('adminToken='.length));
 }
 
+function getAuthToken() {
+  return sessionStorage.getItem('adminToken') || readSessionToken();
+}
+
 async function restoreSession() {
   const existingToken = sessionStorage.getItem('adminToken') || readSessionToken();
   if (!existingToken) {
+    passwordInput.focus();
     return;
   }
 
-  sessionStorage.setItem('adminToken', existingToken);
+  const response = await fetch('/api/session', {
+    headers: {
+      Authorization: `Bearer ${existingToken}`
+    }
+  });
+
+  if (!response.ok) {
+    lockForLogin('Session expired. Enter the admin password again.');
+    return;
+  }
+
   unlock(existingToken);
 }
 
@@ -336,7 +374,7 @@ photoDeleteButton.addEventListener('click', async () => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
+        Authorization: `Bearer ${getAuthToken() || ''}`
       },
       body: JSON.stringify({ file })
     });
@@ -344,6 +382,11 @@ photoDeleteButton.addEventListener('click', async () => {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      if (handleUnauthorized(response)) {
+        closePhotoModal();
+        return;
+      }
+
       throw new Error(data.error || 'Delete failed.');
     }
 
@@ -378,7 +421,7 @@ async function uploadPhotos(fileList) {
     const response = await fetch('/api/upload', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
+        Authorization: `Bearer ${getAuthToken() || ''}`
       },
       body: formData
     });
@@ -386,6 +429,10 @@ async function uploadPhotos(fileList) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      if (handleUnauthorized(response)) {
+        return;
+      }
+
       throw new Error(data.error || 'Upload failed.');
     }
 
