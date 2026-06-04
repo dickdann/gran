@@ -74,6 +74,31 @@ function defaultSlide(file) {
   };
 }
 
+function normalizeSlide(file, existingSlide) {
+  return {
+    file,
+    transition: typeof existingSlide?.transition === 'string' && transitionTypes.includes(existingSlide.transition)
+      ? existingSlide.transition
+      : randomTransition(),
+    duration: Math.max(2, Math.min(60, Number(existingSlide?.duration) || 6)),
+    hidden: Boolean(existingSlide?.hidden),
+    rotation: normalizeRotation(existingSlide?.rotation)
+  };
+}
+
+function mergeSlides(photos, savedSlides) {
+  const photoSet = new Set(photos);
+  const orderedSlides = savedSlides
+    .filter((slide) => photoSet.has(slide.file))
+    .map((slide) => normalizeSlide(slide.file, slide));
+  const orderedSet = new Set(orderedSlides.map((slide) => slide.file));
+  const appendedSlides = photos
+    .filter((file) => !orderedSet.has(file))
+    .map((file) => normalizeSlide(file, null));
+
+  return [...orderedSlides, ...appendedSlides];
+}
+
 function loadSavedConfig() {
   if (!fs.existsSync(configPath)) {
     return null;
@@ -90,22 +115,9 @@ function loadSavedConfig() {
 function mergedConfig() {
   const photos = listPhotos();
   const saved = loadSavedConfig();
-  const photoSet = new Set(photos);
   const savedSlides = Array.isArray(saved?.slides) ? saved.slides : [];
-  const orderedSlides = savedSlides
-    .filter((slide) => photoSet.has(slide.file))
-    .map((slide) => ({
-      file: slide.file,
-      transition: typeof slide.transition === 'string' && transitionTypes.includes(slide.transition)
-        ? slide.transition
-        : randomTransition(),
-      duration: Math.max(2, Math.min(60, Number(slide.duration) || 6)),
-      hidden: Boolean(slide.hidden),
-      rotation: normalizeRotation(slide.rotation)
-    }));
-  const orderedSet = new Set(orderedSlides.map((slide) => slide.file));
-  const newSlides = photos.filter((photo) => !orderedSet.has(photo)).map(defaultSlide);
-  const slides = [...orderedSlides, ...newSlides];
+  const slides = mergeSlides(photos, savedSlides);
+  const photoSet = new Set(photos);
   const hero = photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '';
 
   return { hero, slides };
@@ -129,22 +141,9 @@ function readBody(request) {
 function rebuildConfigFromAssets() {
   const photos = listPhotos();
   const saved = loadSavedConfig();
-  const photoSet = new Set(photos);
   const savedSlides = Array.isArray(saved?.slides) ? saved.slides : [];
-  const savedMap = new Map(savedSlides.filter((slide) => photoSet.has(slide.file)).map((slide) => [slide.file, slide]));
-
-  const slides = photos.map((file) => {
-    const existing = savedMap.get(file);
-    return {
-      file,
-      transition: typeof existing?.transition === 'string' && transitionTypes.includes(existing.transition)
-        ? existing.transition
-        : randomTransition(),
-      duration: Math.max(2, Math.min(60, Number(existing?.duration) || 6)),
-      hidden: Boolean(existing?.hidden),
-      rotation: normalizeRotation(existing?.rotation)
-    };
-  });
+  const slides = mergeSlides(photos, savedSlides);
+  const photoSet = new Set(photos);
 
   const config = {
     hero: photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '',
