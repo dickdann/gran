@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "start": "node server.js",
+    "open": "node server.js --open"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "formidable": "^3.5.2"
+  }
+}

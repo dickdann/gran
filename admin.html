@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+  <main class="admin-shell locked" id="adminShell">
+    <section class="password-panel" id="passwordPanel" aria-labelledby="passwordTitle">
+      <div class="password-card">
+        <p class="eyebrow">Private photo order</p>
+        <h1 id="passwordTitle">Admin Access</h1>
+        <form id="passwordForm" class="password-form">
+          <label for="passwordInput">Password</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" required autofocus>
+          <button type="submit" class="primary-button">Unlock</button>
+          <p id="passwordError" class="form-error" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="admin-workspace" id="adminWorkspace" aria-labelledby="adminTitle">
+      <header class="admin-header">
+        <div>
+          <p class="eyebrow">Memorial slideshow</p>
+          <h1 id="adminTitle">Photo Order</h1>
+        </div>
+        <div class="admin-actions">
+          <a href="index.html" class="secondary-button">Home</a>
+          <button id="saveButton" class="primary-button" type="button">Save</button>
+        </div>
+      </header>
+
+      <section class="upload-panel" aria-labelledby="uploadTitle">
+        <div>
+          <p class="eyebrow">Add photos</p>
+          <h2 id="uploadTitle">Drop or choose images</h2>
+          <p class="upload-help">Upload JPG, PNG, GIF, WEBP, or AVIF files into the slideshow assets folder.</p>
+        </div>
+        <label class="upload-dropzone" id="uploadDropzone" for="photoUploadInput">
+          <input id="photoUploadInput" type="file" accept="image/*" multiple hidden>
+          <span class="upload-dropzone-text">Drop files here or click to browse</span>
+        </label>
+        <p id="uploadStatus" class="save-status" role="status"></p>
+      </section>
+
+      <div class="admin-table-wrap">
+        <table class="photo-table">
+          <thead>
+            <tr>
+              <th>Move</th>
+              <th>Photo</th>
+              <th>Filename</th>
+              <th>Hero</th>
+              <th>Transition</th>
+              <th>Time</th>
+              <th>Hide</th>
+            </tr>
+          </thead>
+          <tbody id="photoRows"></tbody>
+        </table>
+      </div>
+      <p id="saveStatus" class="save-status" role="status"></p>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

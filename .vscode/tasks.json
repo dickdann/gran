@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open photo slider site",
+      "type": "shell",
+      "command": "npm run open",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "photo-slider",
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Photo memorial site running",
+          "endsPattern": "Photo memorial site running"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
