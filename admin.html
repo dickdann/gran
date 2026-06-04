@@ -66,6 +66,16 @@
     </section>
   </main>
 
+  <div id="photoModal" class="photo-modal-backdrop" hidden aria-hidden="true">
+    <div class="photo-modal-card" role="dialog" aria-modal="true" aria-label="Photo preview">
+      <div class="photo-modal-header">
+        <p class="eyebrow">Photo preview</p>
+        <button id="photoModalClose" class="photo-modal-close" type="button" aria-label="Close photo preview">×</button>
+      </div>
+      <img id="photoModalImage" class="photo-modal-image" alt="Full-size photo preview">
+    </div>
+  </div>
+
   <script src="admin.js"></script>
 </body>
 </html>

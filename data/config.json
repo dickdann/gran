@@ -1,18 +1,6 @@
 {
-  "hero": "Important1.jpg",
+  "hero": "20260604_112008.jpg",
   "slides": [
-    {
-      "file": "20260604_112008.jpg",
-      "transition": "blur-fade",
-      "duration": 6,
-      "hidden": false
-    },
-    {
-      "file": "1780528291786-552ed11a-50fa-40a0-8aa6-c122416cf2d9.jpg",
-      "transition": "slide-right",
-      "duration": 6,
-      "hidden": false
-    },
     {
       "file": "1780528391610-2ee497bd-af97-4dca-97f3-64f74ba65d93.jpg",
       "transition": "slide-right",
@@ -35,7 +23,7 @@
       "file": "1780528487336-8aaaceb2-ae33-4cd9-b2df-4fe9202c61cf.jpg",
       "transition": "zoom-out",
       "duration": 6,
-      "hidden": false
+      "hidden": true
     },
     {
       "file": "1780528514954-e5865faf-b153-4695-909e-5b42786a4b55.jpg",
@@ -47,7 +35,7 @@
       "file": "1780528541209-8a84fe4d-fd73-4d44-beb6-097786d7ab5d.jpg",
       "transition": "fade-through",
       "duration": 6,
-      "hidden": false
+      "hidden": true
     },
     {
       "file": "1780528593296-d21daead-779e-4b0c-8b63-76f08031ca81.jpg",
@@ -64,6 +52,18 @@
     {
       "file": "1780528688384-5b12b9ff-7b4e-4983-9386-7ec9a4691825.jpg",
       "transition": "fade-through",
+      "duration": 6,
+      "hidden": false
+    },
+    {
+      "file": "20260604_112008.jpg",
+      "transition": "blur-fade",
+      "duration": 6,
+      "hidden": false
+    },
+    {
+      "file": "1780528291786-552ed11a-50fa-40a0-8aa6-c122416cf2d9.jpg",
+      "transition": "slide-right",
       "duration": 6,
       "hidden": false
     },
@@ -237,12 +237,6 @@
     },
     {
       "file": "Gran and Grandad.jpg",
-      "transition": "slide-left",
-      "duration": 6,
-      "hidden": false
-    },
-    {
-      "file": "Important1.jpg",
       "transition": "slide-left",
       "duration": 6,
       "hidden": false

@@ -27,6 +27,10 @@ body {
   background: radial-gradient(circle at 50% 10%, #fffaf3 0, var(--paper) 38%, #e9e1d5 100%);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select {
@@ -327,6 +331,23 @@ h1 {
   font-weight: 700;
 }
 
+.thumbnail-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.thumbnail-button:hover,
+.thumbnail-button:focus-visible {
+  outline: 2px solid rgba(109, 127, 115, 0.35);
+  outline-offset: 3px;
+}
+
 .admin-thumb {
   width: 72px;
   height: 54px;
@@ -454,6 +475,59 @@ h1 {
   z-index: 2;
   pointer-events: none;
   background: radial-gradient(circle at center, transparent 62%, rgba(0, 0, 0, 0.28) 100%);
+}
+
+.photo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 9, 8, 0.76);
+}
+
+.photo-modal-card {
+  width: min(980px, 100%);
+  max-height: 92vh;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(184, 150, 93, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 250, 242, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.photo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.photo-modal-close {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: #fffdf8;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.photo-modal-image {
+  width: 100%;
+  max-height: 78vh;
+  display: block;
+  object-fit: contain;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ebe4d9, #fdfaf4);
 }
 
 .player-home-button {

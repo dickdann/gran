@@ -22,6 +22,9 @@ const saveStatus = document.getElementById('saveStatus');
 const uploadInput = document.getElementById('photoUploadInput');
 const uploadDropzone = document.getElementById('uploadDropzone');
 const uploadStatus = document.getElementById('uploadStatus');
+const photoModal = document.getElementById('photoModal');
+const photoModalImage = document.getElementById('photoModalImage');
+const photoModalClose = document.getElementById('photoModalClose');
 
 let slides = [];
 let hero = '';
@@ -50,7 +53,11 @@ function renderRows() {
   photoRows.innerHTML = slides.map((slide, index) => `
     <tr draggable="true" data-index="${index}">
       <td><button class="drag-handle" type="button" aria-label="Move ${slide.file}">::</button></td>
-      <td><img class="admin-thumb" src="${assetUrl(slide.file)}" alt=""></td>
+      <td>
+        <button class="thumbnail-button" type="button" data-open-photo="${slide.file}" aria-label="Open ${slide.file} in full size">
+          <img class="admin-thumb" src="${assetUrl(slide.file)}" alt="Preview of ${slide.file}">
+        </button>
+      </td>
       <td class="filename-cell">${slide.file}</td>
       <td><input type="radio" name="hero" value="${slide.file}" ${hero === slide.file ? 'checked' : ''} aria-label="Set ${slide.file} as hero"></td>
       <td><select data-field="transition" aria-label="Transition for ${slide.file}">${transitionOptions(slide.transition)}</select></td>
@@ -58,6 +65,21 @@ function renderRows() {
       <td><label class="hide-checkbox"><input data-field="hidden" type="checkbox" ${slide.hidden ? 'checked' : ''} aria-label="Hide ${slide.file} from display"> Hide</label></td>
     </tr>
   `).join('');
+}
+
+function openPhotoModal(file) {
+  photoModalImage.src = assetUrl(file);
+  photoModalImage.alt = file;
+  photoModal.hidden = false;
+  photoModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+}
+
+function closePhotoModal() {
+  photoModal.hidden = true;
+  photoModal.setAttribute('aria-hidden', 'true');
+  photoModalImage.removeAttribute('src');
+  document.body.classList.remove('modal-open');
 }
 
 function captureRows() {
@@ -170,9 +192,33 @@ photoRows.addEventListener('drop', (event) => {
   renderRows();
 });
 
+photoRows.addEventListener('click', (event) => {
+  const trigger = event.target.closest('[data-open-photo]');
+  if (!trigger) {
+    return;
+  }
+
+  event.preventDefault();
+  openPhotoModal(trigger.dataset.openPhoto);
+});
+
 photoRows.addEventListener('change', (event) => {
   if (event.target.name === 'hero') {
     hero = event.target.value;
+  }
+});
+
+photoModal.addEventListener('click', (event) => {
+  if (event.target === photoModal) {
+    closePhotoModal();
+  }
+});
+
+photoModalClose.addEventListener('click', closePhotoModal);
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !photoModal.hidden) {
+    closePhotoModal();
   }
 });
 
