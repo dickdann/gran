@@ -13,6 +13,7 @@ const assetsDir = path.join(rootDir, 'assets');
 const thumbsDir = path.join(rootDir, 'thumbs');
 const dataDir = path.join(rootDir, 'data');
 const configPath = path.join(dataDir, 'config.json');
+const versionPath = path.join(rootDir, 'cache-version.txt');
 const preferredPort = Number(process.env.PORT || 3000);
 const adminPassword = process.env.PASSWORD || 'morag79';
 const adminToken = require('crypto').randomBytes(32).toString('hex');
@@ -39,6 +40,27 @@ function sendJson(response, status, payload, extraHeaders = {}) {
     ...extraHeaders
   });
   response.end(JSON.stringify(payload));
+}
+
+function assetVersion() {
+  if (!fs.existsSync(versionPath)) {
+    return 'dev';
+  }
+
+  const version = fs.readFileSync(versionPath, 'utf8').trim();
+  return version || 'dev';
+}
+
+function versionHtmlAssets(html) {
+  const version = encodeURIComponent(assetVersion());
+
+  return html.replace(/\b(href|src)="([^"?#]+\.(?:css|js))"/g, (match, attribute, url) => {
+    if (/^(?:[a-z]+:)?\/\//i.test(url)) {
+      return match;
+    }
+
+    return `${attribute}="${url}?v=${version}"`;
+  });
 }
 
 function parseCookies(cookieHeader = '') {
@@ -392,6 +414,12 @@ const server = http.createServer(async (request, response) => {
 
   if (['.html', '.css', '.js', '.json'].includes(extension)) {
     headers['Cache-Control'] = 'no-store';
+  }
+
+  if (extension === '.html') {
+    response.writeHead(200, headers);
+    response.end(versionHtmlAssets(fs.readFileSync(filePath, 'utf8')));
+    return;
   }
 
   response.writeHead(200, headers);

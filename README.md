@@ -37,6 +37,12 @@ You can also launch the browser automatically with:
 
 npm run open
 
+## Cache busting
+
+The server appends the value from `cache-version.txt` to local CSS and JavaScript files in served HTML, for example `styles.css?v=2026.06.05`.
+
+After changing `styles.css`, `app.js`, `admin.js`, or `player.js` in production, update `cache-version.txt` to a new value and restart/redeploy the server so browsers fetch the new files.
+
 ## Environment
 
 The server uses these environment variables when present:
@@ -52,3 +58,4 @@ The server uses these environment variables when present:
 - server.js — HTTP server, API routes, and image handling
 - assets/ — uploaded images
 - data/config.json — saved slideshow configuration
+- cache-version.txt — cache-busting version for CSS and JavaScript
