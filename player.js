@@ -26,6 +26,7 @@ function assetUrl(file) {
 
 function clearTransitionClasses(layer) {
   Object.values(transitionClasses).forEach((className) => layer.classList.remove(className));
+  layer.classList.remove('entering');
 }
 
 function applyRotation(layer, slide) {
@@ -46,7 +47,7 @@ function showSlide(index, instant = false) {
   clearTransitionClasses(nextLayer);
   nextLayer.src = assetUrl(slide.file);
   applyRotation(nextLayer, slide);
-  nextLayer.className = `slide-image ${instant ? '' : transitionClass}`.trim();
+  nextLayer.className = `slide-image ${instant ? '' : `entering ${transitionClass}`}`.trim();
 
   requestAnimationFrame(() => {
     nextLayer.classList.add('active');

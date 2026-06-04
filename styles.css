@@ -405,6 +405,7 @@ h1 {
 .slide-image {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -417,10 +418,15 @@ h1 {
 }
 
 .slide-image.active {
+  z-index: 1;
   opacity: 1;
   transform: rotate(var(--photo-rotation, 0deg)) scale(1);
   filter: blur(0);
   clip-path: inset(0 0 0 0);
+}
+
+.slide-image.entering {
+  z-index: 2;
 }
 
 .enter-fade-through {
@@ -436,17 +442,17 @@ h1 {
 
 .enter-slide-left {
   opacity: 0;
-  transform: rotate(var(--photo-rotation, 0deg)) translateX(5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateX(16%) scale(1.01);
 }
 
 .enter-slide-right {
   opacity: 0;
-  transform: rotate(var(--photo-rotation, 0deg)) translateX(-5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateX(-16%) scale(1.01);
 }
 
 .enter-slide-up {
   opacity: 0;
-  transform: rotate(var(--photo-rotation, 0deg)) translateY(5%) scale(1.01);
+  transform: rotate(var(--photo-rotation, 0deg)) translateY(16%) scale(1.01);
 }
 
 .enter-zoom-in {

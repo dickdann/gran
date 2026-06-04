@@ -17,7 +17,7 @@ const preferredPort = Number(process.env.PORT || 3000);
 const adminPassword = process.env.PASSWORD || 'morag79';
 const adminToken = require('crypto').randomBytes(32).toString('hex');
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']);
-const transitionTypes = ['fade-in', 'fade-through', 'slide-left', 'slide-right', 'slide-up', 'zoom-in', 'zoom-out', 'blur-fade'];
+const transitionTypes = ['fade-in', 'fade-through', 'dissolve', 'slide-left', 'slide-right', 'slide-up', 'zoom-in', 'zoom-out', 'blur-fade', 'lift'];
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',

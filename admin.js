@@ -106,12 +106,13 @@ function closePhotoModal() {
 function captureRows() {
   const rows = Array.from(photoRows.querySelectorAll('tr'));
   slides = rows.map((row) => {
-    const file = slides[Number(row.dataset.index)].file;
+    const currentSlide = slides[Number(row.dataset.index)];
     return {
-      file,
+      file: currentSlide.file,
       transition: row.querySelector('[data-field="transition"]').value,
       duration: Number(row.querySelector('[data-field="duration"]').value) || 6,
-      hidden: Boolean(row.querySelector('[data-field="hidden"]').checked)
+      hidden: Boolean(row.querySelector('[data-field="hidden"]').checked),
+      rotation: normalizeRotation(currentSlide.rotation)
     };
   });
   hero = photoRows.querySelector('input[name="hero"]:checked')?.value || slides[0]?.file || '';
