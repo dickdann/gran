@@ -27,6 +27,7 @@ function assetUrl(file) {
 function clearTransitionClasses(layer) {
   Object.values(transitionClasses).forEach((className) => layer.classList.remove(className));
   layer.classList.remove('entering');
+  layer.classList.remove('preparing');
 }
 
 function applyRotation(layer, slide) {
@@ -47,7 +48,11 @@ function showSlide(index, instant = false) {
   clearTransitionClasses(nextLayer);
   nextLayer.src = assetUrl(slide.file);
   applyRotation(nextLayer, slide);
-  nextLayer.className = `slide-image ${instant ? '' : `entering ${transitionClass}`}`.trim();
+  nextLayer.className = `slide-image ${instant ? '' : `preparing entering ${transitionClass}`}`.trim();
+  if (!instant) {
+    nextLayer.getBoundingClientRect();
+    nextLayer.classList.remove('preparing');
+  }
 
   requestAnimationFrame(() => {
     nextLayer.classList.add('active');
