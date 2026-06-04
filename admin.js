@@ -31,6 +31,7 @@ const photoDeleteButton = document.getElementById('photoDeleteButton');
 let slides = [];
 let hero = '';
 let draggedIndex = null;
+let autoSaveTimer = null;
 
 function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
@@ -150,6 +151,23 @@ async function persistConfig(nextSlides = slides, nextHero = hero) {
   return config;
 }
 
+function queueAutoSave() {
+  if (adminShell.classList.contains('locked')) {
+    return;
+  }
+
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = window.setTimeout(async () => {
+    captureRows();
+    saveStatus.textContent = 'Saving changes...';
+
+    const config = await persistConfig(slides, hero);
+    if (config) {
+      saveStatus.textContent = 'Changes saved automatically.';
+    }
+  }, 150);
+}
+
 async function saveConfig() {
   captureRows();
   saveButton.disabled = true;
@@ -213,6 +231,7 @@ photoRows.addEventListener('drop', (event) => {
   const [movedSlide] = slides.splice(draggedIndex, 1);
   slides.splice(targetIndex, 0, movedSlide);
   renderRows();
+  queueAutoSave();
 });
 
 photoRows.addEventListener('click', (event) => {
@@ -225,9 +244,21 @@ photoRows.addEventListener('click', (event) => {
   openPhotoModal(trigger.dataset.openPhoto);
 });
 
+photoRows.addEventListener('input', (event) => {
+  if (event.target.matches('[data-field="duration"]')) {
+    queueAutoSave();
+  }
+});
+
 photoRows.addEventListener('change', (event) => {
   if (event.target.name === 'hero') {
     hero = event.target.value;
+    queueAutoSave();
+    return;
+  }
+
+  if (event.target.matches('[data-field="transition"], [data-field="hidden"]')) {
+    queueAutoSave();
   }
 });
 

@@ -155,6 +155,15 @@ function rebuildConfigFromAssets() {
   return config;
 }
 
+function ensureStartupConfig() {
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  if (!fs.existsSync(configPath)) {
+    console.log('Creating data/config.json from the current assets folder.');
+    rebuildConfigFromAssets();
+  }
+}
+
 function saveConfig(payload) {
   const photos = listPhotos();
   const photoSet = new Set(photos);
@@ -310,7 +319,7 @@ const server = http.createServer(async (request, response) => {
   fs.createReadStream(filePath).pipe(response);
 });
 
-rebuildConfigFromAssets();
+ensureStartupConfig();
 
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE' && !process.env.PORT) {
