@@ -189,26 +189,27 @@ async function saveConfig() {
   saveButton.disabled = false;
 }
 
+function readSessionToken() {
+  const cookieEntry = document.cookie
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('adminToken='));
+
+  if (!cookieEntry) {
+    return '';
+  }
+
+  return decodeURIComponent(cookieEntry.slice('adminToken='.length));
+}
+
 async function restoreSession() {
-  const existingToken = sessionStorage.getItem('adminToken');
-  if (existingToken) {
-    unlock(existingToken);
+  const existingToken = sessionStorage.getItem('adminToken') || readSessionToken();
+  if (!existingToken) {
     return;
   }
 
-  try {
-    const response = await fetch('/api/config');
-    if (!response.ok) {
-      return;
-    }
-
-    adminShell.classList.remove('locked');
-    passwordPanel.hidden = true;
-    await loadConfig();
-    saveStatus.textContent = 'Admin session restored.';
-  } catch (error) {
-    // Ignore and keep the lock screen visible.
-  }
+  sessionStorage.setItem('adminToken', existingToken);
+  unlock(existingToken);
 }
 
 passwordForm.addEventListener('submit', async (event) => {
@@ -328,14 +329,31 @@ photoDeleteButton.addEventListener('click', async () => {
     return;
   }
 
-  const nextSlides = slides.filter((entry) => entry.file !== file);
-  const nextHero = hero === file ? nextSlides[0]?.file || '' : hero;
   saveStatus.textContent = 'Deleting photo...';
 
-  const config = await persistConfig(nextSlides, nextHero);
-  if (config) {
+  try {
+    const response = await fetch('/api/photo', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
+      },
+      body: JSON.stringify({ file })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Delete failed.');
+    }
+
+    slides = data.config?.slides || [];
+    hero = data.config?.hero || slides[0]?.file || '';
+    renderRows();
     closePhotoModal();
     saveStatus.textContent = 'Photo deleted.';
+  } catch (error) {
+    saveStatus.textContent = error.message || 'Delete failed.';
   }
 });
 

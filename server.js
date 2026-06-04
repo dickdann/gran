@@ -313,6 +313,27 @@ function safePath(urlPath) {
   return filePath;
 }
 
+function safeAssetPath(fileName) {
+  const relativePath = String(fileName || '')
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('/');
+
+  if (!relativePath) {
+    return null;
+  }
+
+  const filePath = path.resolve(assetsDir, relativePath);
+  const assetsRoot = path.resolve(assetsDir);
+
+  if (filePath !== assetsRoot && !filePath.startsWith(`${assetsRoot}${path.sep}`)) {
+    return null;
+  }
+
+  return filePath;
+}
+
 async function handleApi(request, response, pathname) {
   if (request.method === 'GET' && pathname === '/api/photos') {
     sendJson(response, 200, { photos: listPhotos() });
@@ -330,7 +351,7 @@ async function handleApi(request, response, pathname) {
       }
 
       sendJson(response, 200, { token: adminToken }, {
-        'Set-Cookie': `adminToken=${encodeURIComponent(adminToken)}; Path=/; HttpOnly; SameSite=Lax`
+        'Set-Cookie': `adminToken=${encodeURIComponent(adminToken)}; Path=/; SameSite=Lax`
       });
     } catch (error) {
       sendJson(response, 400, { error: error.message });
@@ -381,6 +402,35 @@ async function handleApi(request, response, pathname) {
       await Promise.all(validUploads.map((file) => createThumbnailIfMissing(path.join(assetsDir, file.newFilename || file.originalFilename))));
       const config = rebuildConfigFromAssets();
       sendJson(response, 200, { ok: true, uploaded: validUploads.map((file) => file.originalFilename || file.newFilename), config });
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+    }
+    return true;
+  }
+
+  if (request.method === 'DELETE' && pathname === '/api/photo') {
+    if (getAdminToken(request) !== adminToken) {
+      sendJson(response, 401, { error: 'Unauthorized' });
+      return true;
+    }
+
+    try {
+      const body = await readBody(request);
+      const payload = JSON.parse(body);
+      const assetPath = safeAssetPath(payload.file);
+
+      if (!assetPath || !imageExtensions.has(path.extname(assetPath).toLowerCase())) {
+        sendJson(response, 400, { error: 'Invalid image file.' });
+        return true;
+      }
+
+      const thumbnailPath = path.join(thumbsDir, path.relative(assetsDir, assetPath));
+
+      fs.rmSync(assetPath, { force: true });
+      fs.rmSync(thumbnailPath, { force: true });
+
+      const config = rebuildConfigFromAssets();
+      sendJson(response, 200, { ok: true, deleted: payload.file, config });
     } catch (error) {
       sendJson(response, 400, { error: error.message });
     }
