@@ -37,6 +37,10 @@ function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
 }
 
+function thumbnailUrl(file) {
+  return `thumbs/${file.split('/').map(encodeURIComponent).join('/')}`;
+}
+
 function normalizeRotation(value) {
   const numericValue = Number(value) || 0;
   return ((numericValue % 360) + 360) % 360;
@@ -67,7 +71,7 @@ function renderRows() {
       <td><button class="drag-handle" type="button" aria-label="Move ${slide.file}">::</button></td>
       <td>
         <button class="thumbnail-button" type="button" data-open-photo="${slide.file}" aria-label="Open ${slide.file} in full size">
-          <img class="admin-thumb" src="${assetUrl(slide.file)}" alt="Preview of ${slide.file}" style="transform: ${rotationStyle(slide.rotation)}; transform-origin: center center;">
+          <img class="admin-thumb" src="${thumbnailUrl(slide.file)}" alt="Preview of ${slide.file}" style="transform: ${rotationStyle(slide.rotation)}; transform-origin: center center;">
         </button>
       </td>
       <td class="filename-cell">${slide.file}</td>
@@ -116,6 +120,10 @@ function captureRows() {
 async function loadConfig() {
   saveStatus.textContent = 'Loading photos...';
   const response = await fetch('/api/config');
+  if (!response.ok) {
+    throw new Error('Could not load the slideshow.');
+  }
+
   const config = await response.json();
   slides = config.slides || [];
   hero = config.hero || slides[0]?.file || '';
@@ -178,6 +186,28 @@ async function saveConfig() {
     saveStatus.textContent = 'Saved.';
   }
   saveButton.disabled = false;
+}
+
+async function restoreSession() {
+  const existingToken = sessionStorage.getItem('adminToken');
+  if (existingToken) {
+    unlock(existingToken);
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/config');
+    if (!response.ok) {
+      return;
+    }
+
+    adminShell.classList.remove('locked');
+    passwordPanel.hidden = true;
+    await loadConfig();
+    saveStatus.textContent = 'Admin session restored.';
+  } catch (error) {
+    // Ignore and keep the lock screen visible.
+  }
 }
 
 passwordForm.addEventListener('submit', async (event) => {
@@ -371,3 +401,5 @@ uploadDropzone.addEventListener('drop', (event) => {
 });
 
 saveButton.addEventListener('click', saveConfig);
+
+restoreSession();
