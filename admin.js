@@ -17,8 +17,10 @@ const passwordForm = document.getElementById('passwordForm');
 const passwordInput = document.getElementById('passwordInput');
 const passwordError = document.getElementById('passwordError');
 const photoRows = document.getElementById('photoRows');
-const saveButton = document.getElementById('saveButton');
 const saveStatus = document.getElementById('saveStatus');
+const siteNameInput = document.getElementById('siteNameInput');
+const siteNameSaveButton = document.getElementById('siteNameSaveButton');
+const transitionDurationInput = document.getElementById('transitionDurationInput');
 const uploadInput = document.getElementById('photoUploadInput');
 const uploadDropzone = document.getElementById('uploadDropzone');
 const uploadStatus = document.getElementById('uploadStatus');
@@ -30,6 +32,8 @@ const photoDeleteButton = document.getElementById('photoDeleteButton');
 
 let slides = [];
 let hero = '';
+let siteName = '';
+let transitionDuration = 2.2;
 let draggedIndex = null;
 let autoSaveTimer = null;
 
@@ -46,12 +50,45 @@ function rotationStyle(value) {
   return `rotate(${normalizeRotation(value)}deg)`;
 }
 
-function unlock(token) {
-  sessionStorage.setItem('adminToken', token);
+function unlock(token = '') {
+  if (token) {
+    sessionStorage.setItem('adminToken', token);
+  }
   adminShell.classList.remove('locked');
   passwordPanel.hidden = true;
   window.scrollTo(0, 0);
   loadConfig();
+}
+
+function lockAdmin(message = '') {
+  sessionStorage.removeItem('adminToken');
+  adminShell.classList.add('locked');
+  passwordPanel.hidden = false;
+  passwordInput.value = '';
+  passwordInput.focus();
+  saveStatus.textContent = message;
+}
+
+function authHeaders(extraHeaders = {}) {
+  const token = sessionStorage.getItem('adminToken') || '';
+  return token ? { ...extraHeaders, Authorization: `Bearer ${token}` } : extraHeaders;
+}
+
+function applyConfig(config, options = {}) {
+  slides = config.slides || [];
+  hero = config.hero || slides[0]?.file || '';
+  siteName = config.siteName || '';
+  transitionDuration = Number(config.transitionDuration) || 2.2;
+
+  if (siteNameInput && (options.updateSiteNameInput || document.activeElement !== siteNameInput)) {
+    siteNameInput.value = siteName;
+  }
+
+  if (transitionDurationInput && document.activeElement !== transitionDurationInput) {
+    transitionDurationInput.value = transitionDuration;
+  }
+
+  renderRows();
 }
 
 function transitionOptions(selected) {
@@ -102,52 +139,52 @@ function closePhotoModal() {
 function captureRows() {
   const rows = Array.from(photoRows.querySelectorAll('tr'));
   slides = rows.map((row) => {
-    const file = slides[Number(row.dataset.index)].file;
+    const previousSlide = slides[Number(row.dataset.index)];
     return {
-      file,
+      file: previousSlide.file,
       transition: row.querySelector('[data-field="transition"]').value,
       duration: Number(row.querySelector('[data-field="duration"]').value) || 6,
-      hidden: Boolean(row.querySelector('[data-field="hidden"]').checked)
+      hidden: Boolean(row.querySelector('[data-field="hidden"]').checked),
+      rotation: normalizeRotation(previousSlide.rotation)
     };
   });
   hero = photoRows.querySelector('input[name="hero"]:checked')?.value || slides[0]?.file || '';
+}
+
+function capturePlaybackSettings() {
+  if (transitionDurationInput) {
+    transitionDuration = Number(transitionDurationInput.value) || transitionDuration;
+  }
 }
 
 async function loadConfig() {
   saveStatus.textContent = 'Loading photos...';
   const response = await fetch('/api/config');
   const config = await response.json();
-  slides = config.slides || [];
-  hero = config.hero || slides[0]?.file || '';
-  renderRows();
+  applyConfig(config, { updateSiteNameInput: true });
   saveStatus.textContent = `${slides.length} photos ready.`;
 }
 
-async function persistConfig(nextSlides = slides, nextHero = hero) {
+async function persistConfig(nextSlides = slides, nextHero = hero, options = {}) {
   const response = await fetch('/api/config', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
-    },
-    body: JSON.stringify({ hero: nextHero, slides: nextSlides })
+    credentials: 'same-origin',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      hero: nextHero,
+      siteName: options.siteName ?? siteName,
+      transitionDuration: options.transitionDuration ?? transitionDuration,
+      slides: nextSlides
+    })
   });
 
   if (!response.ok) {
-    sessionStorage.removeItem('adminToken');
-    adminShell.classList.add('locked');
-    passwordPanel.hidden = false;
-    passwordInput.value = '';
-    passwordInput.focus();
-    saveStatus.textContent = 'Session expired. Enter the admin password again.';
-    saveButton.disabled = false;
+    lockAdmin('Session expired. Enter the admin password again.');
     return null;
   }
 
   const config = await response.json();
-  slides = config.slides || [];
-  hero = config.hero || slides[0]?.file || '';
-  renderRows();
+  applyConfig(config, { updateSiteNameInput: Boolean(options.updateSiteNameInput) });
   return config;
 }
 
@@ -159,6 +196,7 @@ function queueAutoSave() {
   clearTimeout(autoSaveTimer);
   autoSaveTimer = window.setTimeout(async () => {
     captureRows();
+    capturePlaybackSettings();
     saveStatus.textContent = 'Saving changes...';
 
     const config = await persistConfig(slides, hero);
@@ -168,16 +206,32 @@ function queueAutoSave() {
   }, 150);
 }
 
-async function saveConfig() {
+async function saveSiteName() {
   captureRows();
-  saveButton.disabled = true;
-  saveStatus.textContent = 'Saving...';
+  capturePlaybackSettings();
+  siteName = siteNameInput.value;
+  siteNameSaveButton.disabled = true;
+  saveStatus.textContent = 'Saving memorial name...';
 
-  const config = await persistConfig(slides, hero);
+  const config = await persistConfig(slides, hero, { siteName, updateSiteNameInput: true });
   if (config) {
-    saveStatus.textContent = 'Saved.';
+    saveStatus.textContent = 'Memorial name saved.';
   }
-  saveButton.disabled = false;
+  siteNameSaveButton.disabled = false;
+}
+
+async function restoreSession() {
+  const response = await fetch('/api/session', {
+    credentials: 'same-origin',
+    headers: authHeaders()
+  });
+
+  if (response.ok) {
+    unlock(sessionStorage.getItem('adminToken') || '');
+    return;
+  }
+
+  lockAdmin('');
 }
 
 passwordForm.addEventListener('submit', async (event) => {
@@ -250,6 +304,10 @@ photoRows.addEventListener('input', (event) => {
   }
 });
 
+transitionDurationInput.addEventListener('input', () => {
+  queueAutoSave();
+});
+
 photoRows.addEventListener('change', (event) => {
   if (event.target.name === 'hero') {
     hero = event.target.value;
@@ -297,15 +355,24 @@ photoDeleteButton.addEventListener('click', async () => {
     return;
   }
 
-  const nextSlides = slides.filter((entry) => entry.file !== file);
-  const nextHero = hero === file ? nextSlides[0]?.file || '' : hero;
   saveStatus.textContent = 'Deleting photo...';
 
-  const config = await persistConfig(nextSlides, nextHero);
-  if (config) {
-    closePhotoModal();
-    saveStatus.textContent = 'Photo deleted.';
+  const response = await fetch('/api/photo', {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ file })
+  });
+
+  if (!response.ok) {
+    lockAdmin('Session expired. Enter the admin password again.');
+    return;
   }
+
+  const data = await response.json();
+  applyConfig(data.config, { updateSiteNameInput: true });
+  closePhotoModal();
+  saveStatus.textContent = 'Photo deleted.';
 });
 
 window.addEventListener('keydown', (event) => {
@@ -328,9 +395,8 @@ async function uploadPhotos(fileList) {
   try {
     const response = await fetch('/api/upload', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${sessionStorage.getItem('adminToken') || ''}`
-      },
+      credentials: 'same-origin',
+      headers: authHeaders(),
       body: formData
     });
 
@@ -370,4 +436,5 @@ uploadDropzone.addEventListener('drop', (event) => {
   uploadPhotos(event.dataTransfer?.files);
 });
 
-saveButton.addEventListener('click', saveConfig);
+siteNameSaveButton.addEventListener('click', saveSiteName);
+restoreSession();
