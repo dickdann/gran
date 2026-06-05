@@ -274,6 +274,16 @@ function mergeSlides(photos, savedSlides) {
   return buildSlideList(photos, savedSlides);
 }
 
+function formatFileList(files, limit = 8) {
+  if (!files.length) {
+    return 'none';
+  }
+
+  const visible = files.slice(0, limit).join(', ');
+  const remaining = files.length - limit;
+  return remaining > 0 ? `${visible}, and ${remaining} more` : visible;
+}
+
 function loadSavedConfig() {
   if (!fs.existsSync(configPath)) {
     return null;
@@ -291,9 +301,7 @@ function configuredSiteName() {
   return normalizeSiteName(loadSavedConfig()?.siteName);
 }
 
-function mergedConfig() {
-  const photos = listPhotos();
-  const saved = loadSavedConfig();
+function buildConfigFromAssets(saved, photos) {
   const savedSlides = Array.isArray(saved?.slides) ? saved.slides : [];
   const slides = mergeSlides(photos, savedSlides);
   const photoSet = new Set(photos);
@@ -305,6 +313,82 @@ function mergedConfig() {
     transitionDuration: normalizeTransitionDuration(saved?.transitionDuration),
     slides
   };
+}
+
+function configReport(saved, photos, config, previousConfigText) {
+  const savedSlides = Array.isArray(saved?.slides) ? saved.slides : [];
+  const photoSet = new Set(photos);
+  const configuredSet = new Set(savedSlides.map((slide) => slide.file));
+  const missingSlides = savedSlides
+    .map((slide) => slide.file)
+    .filter((file) => !photoSet.has(file));
+  const addedSlides = photos.filter((photo) => !configuredSet.has(photo));
+  const nextConfigText = `${JSON.stringify(config, null, 2)}\n`;
+
+  return {
+    assetCount: photos.length,
+    configuredCount: savedSlides.length,
+    finalCount: config.slides.length,
+    missingSlides,
+    addedSlides,
+    heroChanged: Boolean(saved?.hero && saved.hero !== config.hero),
+    previousHero: saved?.hero || '',
+    nextHero: config.hero,
+    shouldWrite: previousConfigText !== nextConfigText,
+    nextConfigText
+  };
+}
+
+function logConfigSync(context, report, wroteConfig) {
+  console.log(`[config-sync] ${context}: scanned ${report.assetCount} asset photo(s) and ${report.configuredCount} configured slide(s).`);
+
+  if (report.missingSlides.length) {
+    console.log(`[config-sync] ${context}: removed ${report.missingSlides.length} stale slide(s): ${formatFileList(report.missingSlides)}.`);
+  }
+
+  if (report.addedSlides.length) {
+    console.log(`[config-sync] ${context}: added ${report.addedSlides.length} new asset slide(s): ${formatFileList(report.addedSlides)}.`);
+  }
+
+  if (report.heroChanged) {
+    console.log(`[config-sync] ${context}: hero changed from "${report.previousHero}" to "${report.nextHero}" because the saved hero was missing.`);
+  }
+
+  if (!report.missingSlides.length && !report.addedSlides.length && !report.heroChanged && !wroteConfig) {
+    console.log(`[config-sync] ${context}: config already matches assets.`);
+    return;
+  }
+
+  console.log(`[config-sync] ${context}: ${wroteConfig ? 'wrote updated' : 'kept'} data/config.json with ${report.finalCount} slide(s).`);
+}
+
+function syncConfigWithAssets(context, options = {}) {
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  const previousConfigText = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
+  const saved = loadSavedConfig();
+  const photos = listPhotos();
+  const config = buildConfigFromAssets(saved, photos);
+  const report = configReport(saved, photos, config, previousConfigText);
+  const wroteConfig = options.forceWrite || report.shouldWrite;
+
+  if (wroteConfig) {
+    fs.writeFileSync(configPath, report.nextConfigText);
+  }
+
+  if (options.log !== false) {
+    logConfigSync(context, report, wroteConfig);
+  }
+
+  return config;
+}
+
+function shouldLogConfigFix(report) {
+  return report.missingSlides.length > 0 || report.addedSlides.length > 0 || report.heroChanged;
+}
+
+function mergedConfig() {
+  return syncConfigWithAssets('api/config', { log: false });
 }
 
 function readBody(request) {
@@ -322,32 +406,12 @@ function readBody(request) {
   });
 }
 
-function rebuildConfigFromAssets() {
-  const photos = listPhotos();
-  const saved = loadSavedConfig();
-  const savedSlides = Array.isArray(saved?.slides) ? saved.slides : [];
-  const slides = mergeSlides(photos, savedSlides);
-  const photoSet = new Set(photos);
-
-  const config = {
-    hero: photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '',
-    siteName: normalizeSiteName(saved?.siteName),
-    transitionDuration: normalizeTransitionDuration(saved?.transitionDuration),
-    slides
-  };
-
-  fs.mkdirSync(dataDir, { recursive: true });
-  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
-  return config;
+function rebuildConfigFromAssets(context = 'rebuild') {
+  return syncConfigWithAssets(context, { forceWrite: true });
 }
 
 function ensureStartupConfig() {
-  fs.mkdirSync(dataDir, { recursive: true });
-
-  if (!fs.existsSync(configPath)) {
-    console.log('Creating data/config.json from the current assets folder.');
-    rebuildConfigFromAssets();
-  }
+  syncConfigWithAssets('startup');
 }
 
 function saveConfig(payload) {
@@ -381,7 +445,14 @@ function saveConfig(payload) {
   };
 
   fs.mkdirSync(dataDir, { recursive: true });
-  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
+  const previousConfigText = fs.existsSync(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
+  const report = configReport({ ...payload, slides }, photos, config, previousConfigText);
+  fs.writeFileSync(configPath, report.nextConfigText);
+
+  if (shouldLogConfigFix(report)) {
+    logConfigSync('api/config save', report, true);
+  }
+
   return config;
 }
 
@@ -500,7 +571,7 @@ async function handleApi(request, response, pathname) {
         await shrinkPhotoIfNeeded(filePath, 1200);
         await createThumbnailIfMissing(filePath);
       }));
-      const config = rebuildConfigFromAssets();
+      const config = rebuildConfigFromAssets('upload');
       sendJson(response, 200, { ok: true, uploaded: validUploads.map((file) => file.originalFilename || file.newFilename), config });
     } catch (error) {
       sendJson(response, 400, { error: error.message });
@@ -529,7 +600,7 @@ async function handleApi(request, response, pathname) {
       fs.rmSync(assetPath, { force: true });
       fs.rmSync(thumbnailPath, { force: true });
 
-      const config = rebuildConfigFromAssets();
+      const config = rebuildConfigFromAssets('delete');
       sendJson(response, 200, { ok: true, deleted: payload.file, config });
     } catch (error) {
       sendJson(response, 400, { error: error.message });
@@ -554,7 +625,7 @@ async function handleApi(request, response, pathname) {
 
     try {
       const result = await shrinkPhotoAssets(1200, sendProgress);
-      const config = rebuildConfigFromAssets();
+      const config = rebuildConfigFromAssets('shrink');
       sendProgress({ type: 'done', ok: true, ...result, config });
     } catch (error) {
       sendProgress({ type: 'error', error: error.message });
