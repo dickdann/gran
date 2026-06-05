@@ -1,11 +1,11 @@
 # A Life Remembered
 
-A small memorial photo site for sharing a curated slideshow of photographs, with a simple admin page for ordering and hiding images.
+A small memorial photo site for sharing a curated slideshow of photographs, with a simple admin page for ordering, uploading, deleting and hiding images.  Control transitions and timings.  
 
 ## Purpose
 
 This project lets you:
-- display a polished memorial slideshow on the public site,
+- display a polished memorial slideshow on a public or private site,
 - upload and manage photos from an admin area,
 - choose a hero image and control slideshow timing/transitions.
 
@@ -49,6 +49,7 @@ The server uses these environment variables when present:
 
 - PORT — custom port for the server (default: 3000)
 - PASSWORD — admin password (default: password)
+- NAME - The deceased persons name
 
 ## Project structure
 
