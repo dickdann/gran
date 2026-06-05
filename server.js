@@ -15,11 +15,11 @@ const dataDir = path.join(rootDir, 'data');
 const configPath = path.join(dataDir, 'config.json');
 const versionPath = path.join(rootDir, 'cache-version.txt');
 const preferredPort = Number(process.env.PORT || 3000);
-const adminPassword = process.env.PASSWORD || 'morag79';
+const adminPassword = process.env.PASSWORD || 'password';
 const adminToken = require('crypto').randomBytes(32).toString('hex');
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']);
 const transitionTypes = ['fade-in', 'fade-through', 'dissolve', 'slide-left', 'slide-right', 'slide-up', 'zoom-in', 'zoom-out', 'blur-fade', 'lift'];
-const defaultTransitionDuration = 1.8;
+const defaultTransitionDuration = 2.2;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -184,7 +184,7 @@ async function shrinkPhotoIfNeeded(photoPath, maxSize = 1200) {
   return true;
 }
 
-async function shrinkPhotoAssets(maxSize = 1200) {
+async function shrinkPhotoAssets(maxSize = 1200, onProgress = () => {}) {
   const photos = listPhotos();
   const result = {
     total: photos.length,
@@ -192,21 +192,38 @@ async function shrinkPhotoAssets(maxSize = 1200) {
     skipped: 0,
     failed: []
   };
+  let processed = 0;
+
+  onProgress({ type: 'start', total: result.total });
 
   for (const photo of photos) {
     const photoPath = path.join(assetsDir, photo);
+    let status = 'skipped';
 
     try {
       const wasShrunk = await shrinkPhotoIfNeeded(photoPath, maxSize);
 
       if (!wasShrunk) {
         result.skipped += 1;
-        continue;
+      } else {
+        result.shrunk += 1;
+        status = 'shrunk';
       }
-
-      result.shrunk += 1;
     } catch (error) {
       result.failed.push({ file: photo, error: error.message });
+      status = 'failed';
+    } finally {
+      processed += 1;
+      onProgress({
+        type: 'progress',
+        file: photo,
+        status,
+        processed,
+        total: result.total,
+        shrunk: result.shrunk,
+        skipped: result.skipped,
+        failed: result.failed
+      });
     }
   }
 
@@ -510,13 +527,23 @@ async function handleApi(request, response, pathname) {
       return true;
     }
 
+    response.writeHead(200, {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-store'
+    });
+
+    const sendProgress = (payload) => {
+      response.write(`${JSON.stringify(payload)}\n`);
+    };
+
     try {
-      const result = await shrinkPhotoAssets(1200);
+      const result = await shrinkPhotoAssets(1200, sendProgress);
       const config = rebuildConfigFromAssets();
-      sendJson(response, 200, { ok: true, ...result, config });
+      sendProgress({ type: 'done', ok: true, ...result, config });
     } catch (error) {
-      sendJson(response, 400, { error: error.message });
+      sendProgress({ type: 'error', error: error.message });
     }
+    response.end();
     return true;
   }
 

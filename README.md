@@ -48,7 +48,7 @@ After changing `styles.css`, `app.js`, `admin.js`, or `player.js` in production,
 The server uses these environment variables when present:
 
 - PORT — custom port for the server (default: 3000)
-- PASSWORD — admin password (default: morag79)
+- PASSWORD — admin password (default: password)
 
 ## Project structure
 

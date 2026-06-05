@@ -18,6 +18,8 @@ const passwordInput = document.getElementById('passwordInput');
 const passwordError = document.getElementById('passwordError');
 const photoRows = document.getElementById('photoRows');
 const shrinkButton = document.getElementById('shrinkButton');
+const shrinkProgressWrap = document.getElementById('shrinkProgressWrap');
+const shrinkProgress = document.getElementById('shrinkProgress');
 const saveStatus = document.getElementById('saveStatus');
 const transitionDurationInput = document.getElementById('transitionDurationInput');
 const uploadInput = document.getElementById('photoUploadInput');
@@ -466,12 +468,88 @@ uploadDropzone.addEventListener('drop', (event) => {
   uploadPhotos(event.dataTransfer?.files);
 });
 
+function showShrinkProgress(total = 100, processed = 0) {
+  shrinkProgress.max = Math.max(1, Number(total) || 1);
+  shrinkProgress.value = Math.max(0, Math.min(shrinkProgress.max, Number(processed) || 0));
+  shrinkProgressWrap.hidden = false;
+}
+
+function hideShrinkProgress() {
+  shrinkProgress.value = 0;
+  shrinkProgressWrap.hidden = true;
+}
+
+function updateShrinkProgress(eventData) {
+  if (eventData.type === 'start') {
+    showShrinkProgress(eventData.total, 0);
+    saveStatus.textContent = `Preparing to shrink ${eventData.total || 0} photo(s)...`;
+    return;
+  }
+
+  if (eventData.type === 'progress') {
+    showShrinkProgress(eventData.total, eventData.processed);
+    saveStatus.textContent = `Shrinking photos... ${eventData.processed || 0}/${eventData.total || 0}`;
+  }
+}
+
+async function readShrinkProgress(response) {
+  if (!response.body) {
+    return response.json();
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalData = null;
+
+  function readLine(line) {
+    if (!line.trim()) {
+      return;
+    }
+
+    const eventData = JSON.parse(line);
+    if (eventData.type === 'done') {
+      finalData = eventData;
+      showShrinkProgress(eventData.total, eventData.total);
+      return;
+    }
+
+    if (eventData.type === 'error') {
+      throw new Error(eventData.error || 'Shrink failed.');
+    }
+
+    updateShrinkProgress(eventData);
+  }
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    lines.forEach(readLine);
+  }
+
+  buffer += decoder.decode();
+  readLine(buffer);
+
+  if (!finalData) {
+    throw new Error('Shrink failed before completion.');
+  }
+
+  return finalData;
+}
+
 shrinkButton.addEventListener('click', async () => {
   if (!window.confirm('Shrink every photo larger than 1200px wide or tall? This will overwrite the original files.')) {
     return;
   }
 
   shrinkButton.disabled = true;
+  showShrinkProgress(100, 0);
   saveStatus.textContent = 'Shrinking photos...';
 
   try {
@@ -482,9 +560,8 @@ shrinkButton.addEventListener('click', async () => {
       }
     });
 
-    const data = await response.json().catch(() => ({}));
-
     if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
       if (handleUnauthorized(response)) {
         return;
       }
@@ -492,6 +569,7 @@ shrinkButton.addEventListener('click', async () => {
       throw new Error(data.error || 'Shrink failed.');
     }
 
+    const data = await readShrinkProgress(response);
     await loadConfig();
     const failedCount = data.failed?.length || 0;
     saveStatus.textContent = `Shrunk ${data.shrunk || 0} photo(s); ${data.skipped || 0} already small${failedCount ? `; ${failedCount} failed` : ''}.`;
@@ -499,6 +577,7 @@ shrinkButton.addEventListener('click', async () => {
     saveStatus.textContent = error.message || 'Shrink failed.';
   } finally {
     shrinkButton.disabled = false;
+    window.setTimeout(hideShrinkProgress, 1200);
   }
 });
 
