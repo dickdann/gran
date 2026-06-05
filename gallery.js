@@ -54,6 +54,9 @@ function renderMainPhoto() {
   if (!slides.length) {
     galleryImage.removeAttribute('src');
     galleryImage.alt = 'No photos found';
+    galleryImage.removeAttribute('role');
+    galleryImage.removeAttribute('tabindex');
+    galleryImage.removeAttribute('aria-label');
     galleryCounter.textContent = 'No photos found';
     previousPhotoButton.disabled = true;
     nextPhotoButton.disabled = true;
@@ -64,6 +67,9 @@ function renderMainPhoto() {
   const slide = slides[currentIndex];
   galleryImage.src = assetUrl(slide.file);
   galleryImage.alt = fileName(slide.file);
+  galleryImage.setAttribute('role', 'button');
+  galleryImage.setAttribute('tabindex', '0');
+  galleryImage.setAttribute('aria-label', `Open ${fileName(slide.file)} full screen`);
   galleryImage.style.transform = rotationStyle(slide);
   galleryCounter.textContent = `${currentIndex + 1} / ${slides.length}`;
   setDownload(downloadMainButton, slide);
@@ -163,6 +169,17 @@ async function loadGallery() {
 
 previousPhotoButton.addEventListener('click', () => showPhoto(currentIndex - 1));
 nextPhotoButton.addEventListener('click', () => showPhoto(currentIndex + 1));
+galleryImage.addEventListener('click', () => {
+  if (slides.length) {
+    openModal(currentIndex);
+  }
+});
+galleryImage.addEventListener('keydown', (event) => {
+  if ((event.key === 'Enter' || event.key === ' ') && slides.length) {
+    event.preventDefault();
+    openModal(currentIndex);
+  }
+});
 
 gallerySelector.addEventListener('click', (event) => {
   const button = event.target.closest('[data-index]');

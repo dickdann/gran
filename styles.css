@@ -751,7 +751,13 @@ h1 {
   background: linear-gradient(135deg, #ebe4d9, #fdfaf4);
   border: 1px solid rgba(184, 150, 93, 0.32);
   box-shadow: var(--shadow);
+  cursor: zoom-in;
   transform-origin: center center;
+}
+
+.gallery-image:focus-visible {
+  outline: 3px solid rgba(109, 127, 115, 0.55);
+  outline-offset: 4px;
 }
 
 .gallery-counter {
