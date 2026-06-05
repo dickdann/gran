@@ -172,6 +172,47 @@ async function generateMissingThumbnails() {
   await Promise.all(photoPaths.map((photoPath) => createThumbnailIfMissing(photoPath)));
 }
 
+async function shrinkPhotoIfNeeded(photoPath, maxSize = 1200) {
+  const image = await Jimp.read(photoPath);
+  const { width, height } = image.bitmap;
+
+  if (width <= maxSize && height <= maxSize) {
+    return false;
+  }
+
+  await image.scaleToFit({ w: maxSize, h: maxSize }).write(photoPath);
+  return true;
+}
+
+async function shrinkPhotoAssets(maxSize = 1200) {
+  const photos = listPhotos();
+  const result = {
+    total: photos.length,
+    shrunk: 0,
+    skipped: 0,
+    failed: []
+  };
+
+  for (const photo of photos) {
+    const photoPath = path.join(assetsDir, photo);
+
+    try {
+      const wasShrunk = await shrinkPhotoIfNeeded(photoPath, maxSize);
+
+      if (!wasShrunk) {
+        result.skipped += 1;
+        continue;
+      }
+
+      result.shrunk += 1;
+    } catch (error) {
+      result.failed.push({ file: photo, error: error.message });
+    }
+  }
+
+  return result;
+}
+
 function defaultSlide(file) {
   return {
     file,
@@ -421,7 +462,11 @@ async function handleApi(request, response, pathname) {
         return true;
       }
 
-      await Promise.all(validUploads.map((file) => createThumbnailIfMissing(path.join(assetsDir, file.newFilename || file.originalFilename))));
+      await Promise.all(validUploads.map(async (file) => {
+        const filePath = path.join(assetsDir, file.newFilename || file.originalFilename);
+        await shrinkPhotoIfNeeded(filePath, 1200);
+        await createThumbnailIfMissing(filePath);
+      }));
       const config = rebuildConfigFromAssets();
       sendJson(response, 200, { ok: true, uploaded: validUploads.map((file) => file.originalFilename || file.newFilename), config });
     } catch (error) {
@@ -453,6 +498,22 @@ async function handleApi(request, response, pathname) {
 
       const config = rebuildConfigFromAssets();
       sendJson(response, 200, { ok: true, deleted: payload.file, config });
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+    }
+    return true;
+  }
+
+  if (request.method === 'POST' && pathname === '/api/shrink') {
+    if (getAdminToken(request) !== adminToken) {
+      sendJson(response, 401, { error: 'Unauthorized' });
+      return true;
+    }
+
+    try {
+      const result = await shrinkPhotoAssets(1200);
+      const config = rebuildConfigFromAssets();
+      sendJson(response, 200, { ok: true, ...result, config });
     } catch (error) {
       sendJson(response, 400, { error: error.message });
     }

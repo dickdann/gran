@@ -17,7 +17,7 @@ const passwordForm = document.getElementById('passwordForm');
 const passwordInput = document.getElementById('passwordInput');
 const passwordError = document.getElementById('passwordError');
 const photoRows = document.getElementById('photoRows');
-const saveButton = document.getElementById('saveButton');
+const shrinkButton = document.getElementById('shrinkButton');
 const saveStatus = document.getElementById('saveStatus');
 const transitionDurationInput = document.getElementById('transitionDurationInput');
 const uploadInput = document.getElementById('photoUploadInput');
@@ -185,7 +185,6 @@ async function persistConfig(nextSlides = slides, nextHero = hero, nextTransitio
       const data = await response.json().catch(() => ({}));
       saveStatus.textContent = data.error || 'Could not save changes.';
     }
-    saveButton.disabled = false;
     return null;
   }
 
@@ -210,18 +209,6 @@ function queueAutoSave() {
       saveStatus.textContent = 'Changes saved automatically.';
     }
   }, 150);
-}
-
-async function saveConfig() {
-  captureRows();
-  saveButton.disabled = true;
-  saveStatus.textContent = 'Saving...';
-
-  const config = await persistConfig(slides, hero, transitionDuration);
-  if (config) {
-    saveStatus.textContent = 'Saved.';
-  }
-  saveButton.disabled = false;
 }
 
 function readSessionToken() {
@@ -479,6 +466,40 @@ uploadDropzone.addEventListener('drop', (event) => {
   uploadPhotos(event.dataTransfer?.files);
 });
 
-saveButton.addEventListener('click', saveConfig);
+shrinkButton.addEventListener('click', async () => {
+  if (!window.confirm('Shrink every photo larger than 1200px wide or tall? This will overwrite the original files.')) {
+    return;
+  }
+
+  shrinkButton.disabled = true;
+  saveStatus.textContent = 'Shrinking photos...';
+
+  try {
+    const response = await fetch('/api/shrink', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getAuthToken() || ''}`
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (handleUnauthorized(response)) {
+        return;
+      }
+
+      throw new Error(data.error || 'Shrink failed.');
+    }
+
+    await loadConfig();
+    const failedCount = data.failed?.length || 0;
+    saveStatus.textContent = `Shrunk ${data.shrunk || 0} photo(s); ${data.skipped || 0} already small${failedCount ? `; ${failedCount} failed` : ''}.`;
+  } catch (error) {
+    saveStatus.textContent = error.message || 'Shrink failed.';
+  } finally {
+    shrinkButton.disabled = false;
+  }
+});
 
 restoreSession();
