@@ -21,6 +21,8 @@ const shrinkButton = document.getElementById('shrinkButton');
 const shrinkProgressWrap = document.getElementById('shrinkProgressWrap');
 const shrinkProgress = document.getElementById('shrinkProgress');
 const saveStatus = document.getElementById('saveStatus');
+const siteNameInput = document.getElementById('siteNameInput');
+const siteNameSaveButton = document.getElementById('siteNameSaveButton');
 const transitionDurationInput = document.getElementById('transitionDurationInput');
 const uploadInput = document.getElementById('photoUploadInput');
 const uploadDropzone = document.getElementById('uploadDropzone');
@@ -33,6 +35,7 @@ const photoDeleteButton = document.getElementById('photoDeleteButton');
 
 let slides = [];
 let hero = '';
+let siteName = 'A Life Remembered';
 let transitionDuration = 1.8;
 let draggedIndex = null;
 let autoSaveTimer = null;
@@ -41,10 +44,16 @@ function normalizeTransitionDuration(value) {
   return Math.max(0.5, Math.min(8, Number(value) || 1.8));
 }
 
+function normalizeSiteName(value) {
+  return String(value || '').trim() || 'A Life Remembered';
+}
+
 function applyConfig(config) {
   slides = config.slides || [];
   hero = config.hero || slides[0]?.file || '';
+  siteName = normalizeSiteName(config.siteName);
   transitionDuration = normalizeTransitionDuration(config.transitionDuration);
+  siteNameInput.value = siteName;
   transitionDurationInput.value = transitionDuration;
 }
 
@@ -172,14 +181,14 @@ async function loadConfig() {
   saveStatus.textContent = `${slides.length} photos ready.`;
 }
 
-async function persistConfig(nextSlides = slides, nextHero = hero, nextTransitionDuration = transitionDuration) {
+async function persistConfig(nextSlides = slides, nextHero = hero, nextTransitionDuration = transitionDuration, nextSiteName = siteName) {
   const response = await fetch('/api/config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getAuthToken() || ''}`
     },
-    body: JSON.stringify({ hero: nextHero, transitionDuration: nextTransitionDuration, slides: nextSlides })
+    body: JSON.stringify({ hero: nextHero, siteName: nextSiteName, transitionDuration: nextTransitionDuration, slides: nextSlides })
   });
 
   if (!response.ok) {
@@ -206,7 +215,7 @@ function queueAutoSave() {
     captureRows();
     saveStatus.textContent = 'Saving changes...';
 
-    const config = await persistConfig(slides, hero, transitionDuration);
+    const config = await persistConfig(slides, hero, transitionDuration, siteName);
     if (config) {
       saveStatus.textContent = 'Changes saved automatically.';
     }
@@ -334,6 +343,34 @@ photoRows.addEventListener('change', (event) => {
 });
 
 transitionDurationInput.addEventListener('input', queueAutoSave);
+
+async function saveSiteName() {
+  captureRows();
+  const nextSiteName = normalizeSiteName(siteNameInput.value);
+
+  siteNameSaveButton.disabled = true;
+  saveStatus.textContent = 'Saving name...';
+
+  try {
+    const config = await persistConfig(slides, hero, transitionDuration, nextSiteName);
+    if (config) {
+      saveStatus.textContent = 'Name saved.';
+    }
+  } catch (error) {
+    saveStatus.textContent = error.message || 'Could not save name.';
+  } finally {
+    siteNameSaveButton.disabled = false;
+  }
+}
+
+siteNameSaveButton.addEventListener('click', saveSiteName);
+
+siteNameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    saveSiteName();
+  }
+});
 
 photoModal.addEventListener('click', (event) => {
   if (event.target === photoModal) {

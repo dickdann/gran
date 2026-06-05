@@ -280,6 +280,26 @@ h1 {
   font-size: 1.35rem;
 }
 
+.site-name-panel {
+  align-items: stretch;
+}
+
+.site-name-field {
+  width: 100%;
+}
+
+.site-name-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.name-save-button {
+  min-height: 38px;
+  padding: 8px 16px;
+}
+
 .setting-field {
   display: grid;
   gap: 8px;
@@ -296,6 +316,11 @@ h1 {
 
 .setting-field input[type='number'] {
   width: 96px;
+}
+
+.setting-field input[type='text'] {
+  width: min(100%, 520px);
+  flex: 1 1 280px;
 }
 
 .upload-help {

@@ -20,6 +20,7 @@ const adminToken = require('crypto').randomBytes(32).toString('hex');
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']);
 const transitionTypes = ['fade-in', 'fade-through', 'dissolve', 'slide-left', 'slide-right', 'slide-up', 'zoom-in', 'zoom-out', 'blur-fade', 'lift'];
 const defaultTransitionDuration = 2.2;
+const defaultSiteName = 'A Life Remembered';
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -73,7 +74,7 @@ function escapeHtml(value) {
 }
 
 function injectSiteName(html) {
-  return html.replaceAll('__SITE_NAME__', escapeHtml(process.env.NAME || 'A Life Remembered'));
+  return html.replaceAll('__SITE_NAME__', escapeHtml(configuredSiteName()));
 }
 function parseCookies(cookieHeader = '') {
   return cookieHeader
@@ -135,6 +136,10 @@ function normalizeRotation(value) {
 
 function normalizeTransitionDuration(value) {
   return Math.max(0.5, Math.min(8, Number(value) || defaultTransitionDuration));
+}
+
+function normalizeSiteName(value) {
+  return String(value || '').trim() || defaultSiteName;
 }
 
 function ensureThumbsDir() {
@@ -282,6 +287,10 @@ function loadSavedConfig() {
   }
 }
 
+function configuredSiteName() {
+  return normalizeSiteName(loadSavedConfig()?.siteName);
+}
+
 function mergedConfig() {
   const photos = listPhotos();
   const saved = loadSavedConfig();
@@ -290,7 +299,12 @@ function mergedConfig() {
   const photoSet = new Set(photos);
   const hero = photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '';
 
-  return { hero, transitionDuration: normalizeTransitionDuration(saved?.transitionDuration), slides };
+  return {
+    hero,
+    siteName: normalizeSiteName(saved?.siteName),
+    transitionDuration: normalizeTransitionDuration(saved?.transitionDuration),
+    slides
+  };
 }
 
 function readBody(request) {
@@ -317,6 +331,7 @@ function rebuildConfigFromAssets() {
 
   const config = {
     hero: photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '',
+    siteName: normalizeSiteName(saved?.siteName),
     transitionDuration: normalizeTransitionDuration(saved?.transitionDuration),
     slides
   };
@@ -360,6 +375,7 @@ function saveConfig(payload) {
 
   const config = {
     hero: photoSet.has(payload.hero) ? payload.hero : orderedSlides[0]?.file || '',
+    siteName: normalizeSiteName(payload.siteName),
     transitionDuration: normalizeTransitionDuration(payload.transitionDuration),
     slides: orderedSlides
   };

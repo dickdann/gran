@@ -49,7 +49,8 @@ The server uses these environment variables when present:
 
 - PORT — custom port for the server (default: 3000)
 - PASSWORD — admin password (default: password)
-- NAME - The deceased persons name
+
+The memorial name is managed from the admin page and saved in `data/config.json`.
 
 ## Project structure
 
