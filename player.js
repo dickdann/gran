@@ -6,6 +6,10 @@ let slides = [];
 let currentIndex = 0;
 let activeLayer = 0;
 let timer = null;
+let transitionCleanupTimer = null;
+let isTransitioning = false;
+
+const transitionDurationMs = 1800;
 
 const transitionClasses = {
   'fade-in': 'enter-fade-in',
@@ -27,6 +31,7 @@ function assetUrl(file) {
 function clearTransitionClasses(layer) {
   Object.values(transitionClasses).forEach((className) => layer.classList.remove(className));
   layer.classList.remove('entering');
+  layer.classList.remove('exiting');
   layer.classList.remove('preparing');
 }
 
@@ -40,28 +45,53 @@ function showSlide(index, instant = false) {
     return;
   }
 
-  const slide = slides[index];
+  if (isTransitioning && !instant) {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => showSlide(index), 250);
+    return;
+  }
+
+  const slideIndex = (index + slides.length) % slides.length;
+  const slide = slides[slideIndex];
   const nextLayer = layers[1 - activeLayer];
   const currentLayer = layers[activeLayer];
   const transitionClass = transitionClasses[slide.transition] || transitionClasses['fade-in'];
 
+  window.clearTimeout(transitionCleanupTimer);
   clearTransitionClasses(nextLayer);
   nextLayer.src = assetUrl(slide.file);
   applyRotation(nextLayer, slide);
-  nextLayer.className = `slide-image ${instant ? '' : `preparing entering ${transitionClass}`}`.trim();
-  if (!instant) {
-    nextLayer.getBoundingClientRect();
-    nextLayer.classList.remove('preparing');
+
+  if (instant) {
+    nextLayer.className = 'slide-image active';
+    currentLayer.classList.remove('active');
+    clearTransitionClasses(currentLayer);
+    activeLayer = 1 - activeLayer;
+    currentIndex = slideIndex;
+    window.clearTimeout(timer);
+    timer = window.setTimeout(nextSlide, Math.max(2, Number(slide.duration) || 6) * 1000);
+    return;
   }
 
+  isTransitioning = true;
+  nextLayer.className = `slide-image preparing entering ${transitionClass}`;
+  currentLayer.classList.add('exiting');
+  currentLayer.classList.remove('active');
+  nextLayer.getBoundingClientRect();
+
   requestAnimationFrame(() => {
+    nextLayer.classList.remove('preparing');
     nextLayer.classList.add('active');
-    currentLayer.classList.remove('active');
-    setTimeout(() => clearTransitionClasses(nextLayer), 1800);
+    transitionCleanupTimer = window.setTimeout(() => {
+      clearTransitionClasses(nextLayer);
+      clearTransitionClasses(currentLayer);
+      currentLayer.removeAttribute('src');
+      isTransitioning = false;
+    }, transitionDurationMs);
   });
 
   activeLayer = 1 - activeLayer;
-  currentIndex = index;
+  currentIndex = slideIndex;
   window.clearTimeout(timer);
   timer = window.setTimeout(nextSlide, Math.max(2, Number(slide.duration) || 6) * 1000);
 }
@@ -91,9 +121,7 @@ async function start() {
   }
 
   applyRotation(layers[activeLayer], slides[0]);
-  layers[activeLayer].src = assetUrl(slides[0].file);
-  layers[activeLayer].classList.add('active');
-  timer = window.setTimeout(nextSlide, Math.max(2, Number(slides[0].duration) || 6) * 1000);
+  showSlide(0, true);
   requestFullscreen();
 }
 
@@ -104,6 +132,10 @@ document.addEventListener('fullscreenchange', () => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'ArrowRight' || event.key === ' ') {
+    event.preventDefault();
+    if (event.repeat) {
+      return;
+    }
     nextSlide();
   }
 });
