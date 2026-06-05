@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo Gallery</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.png" type="image/png">
+</head>
+<body class="gallery-page">
+  <main class="gallery-shell" aria-labelledby="galleryTitle">
+    <header class="gallery-header">
+      <h1 id="galleryTitle">A Life Remembered</h1>
+      <p class="gallery-name">__SITE_NAME__</p>
+    </header>
+
+    <section class="gallery-carousel" aria-label="Photo gallery carousel">
+      <button id="previousPhotoButton" class="carousel-button carousel-button-left" type="button" aria-label="Previous photo">&lt;</button>
+      <figure class="gallery-feature">
+        <img id="galleryImage" class="gallery-image" alt="Memorial photograph">
+        <figcaption id="galleryCounter" class="gallery-counter"></figcaption>
+      </figure>
+      <button id="nextPhotoButton" class="carousel-button carousel-button-right" type="button" aria-label="Next photo">&gt;</button>
+    </section>
+
+    <div class="gallery-actions" aria-label="Gallery actions">
+      <a id="downloadMainButton" class="primary-button" href="#" download>Download</a>
+      <button id="openThumbGridButton" class="secondary-button" type="button">View all thumbnails</button>
+      <a class="secondary-button" href="index.html">Home</a>
+    </div>
+
+    <section class="gallery-selector-wrap" aria-label="Photo selector">
+      <div id="gallerySelector" class="gallery-selector"></div>
+    </section>
+  </main>
+
+  <section id="thumbGridPanel" class="thumb-grid-panel" hidden aria-hidden="true" aria-labelledby="thumbGridTitle">
+    <header class="thumb-grid-header">
+      <div>
+        <p class="eyebrow">Photo gallery</p>
+        <h2 id="thumbGridTitle">All Thumbnails</h2>
+      </div>
+      <button id="closeThumbGridButton" class="photo-modal-close" type="button" aria-label="Close thumbnails">×</button>
+    </header>
+    <div id="thumbGrid" class="thumb-grid"></div>
+  </section>
+
+  <div id="galleryModal" class="photo-modal-backdrop" hidden aria-hidden="true">
+    <div class="photo-modal-card gallery-modal-card" role="dialog" aria-modal="true" aria-label="Gallery photo preview">
+      <div class="photo-modal-header">
+        <p id="galleryModalTitle" class="eyebrow">Photo preview</p>
+        <button id="galleryModalClose" class="photo-modal-close" type="button" aria-label="Close photo preview">×</button>
+      </div>
+      <div class="photo-modal-controls">
+        <a id="downloadModalButton" class="primary-button photo-modal-action" href="#" download>Download</a>
+      </div>
+      <img id="galleryModalImage" class="photo-modal-image" alt="Full-size photo preview">
+    </div>
+  </div>
+
+  <script src="gallery.js"></script>
+</body>
+</html>

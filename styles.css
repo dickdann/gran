@@ -174,6 +174,10 @@ h1 {
   backdrop-filter: blur(10px);
 }
 
+.gallery-link {
+  right: 82px;
+}
+
 .admin-shell {
   min-height: 100vh;
 }
@@ -689,6 +693,193 @@ h1 {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.gallery-page {
+  min-height: 100vh;
+}
+
+.gallery-shell {
+  width: min(1320px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: clamp(14px, 2.4vw, 24px);
+  padding: clamp(18px, 3vw, 36px);
+}
+
+.gallery-header {
+  text-align: center;
+}
+
+.gallery-header h1 {
+  font-size: clamp(2.4rem, 5vw, 5rem);
+}
+
+.gallery-name {
+  margin: 10px 0 0;
+  color: var(--accent-dark);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(0.88rem, 2vw, 1.08rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.gallery-carousel {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: clamp(10px, 2vw, 18px);
+}
+
+.gallery-feature {
+  min-width: 0;
+  height: min(62vh, 720px);
+  margin: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.gallery-image {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  display: block;
+  object-fit: contain;
+  background: linear-gradient(135deg, #ebe4d9, #fdfaf4);
+  border: 1px solid rgba(184, 150, 93, 0.32);
+  box-shadow: var(--shadow);
+  transform-origin: center center;
+}
+
+.gallery-counter {
+  min-height: 20px;
+  color: var(--muted);
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.carousel-button {
+  width: 52px;
+  height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  background: rgba(255, 250, 242, 0.8);
+  box-shadow: 0 10px 28px rgba(36, 29, 25, 0.12);
+  cursor: pointer;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.carousel-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.gallery-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gallery-selector-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.gallery-selector {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 4px 4px 12px;
+  scrollbar-color: rgba(66, 86, 74, 0.45) transparent;
+}
+
+.gallery-selector-button {
+  flex: 0 0 auto;
+  width: clamp(76px, 9vw, 118px);
+  aspect-ratio: 4 / 3;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 250, 242, 0.72);
+  cursor: pointer;
+}
+
+.gallery-selector-button.current {
+  border-color: var(--accent-dark);
+  box-shadow: 0 0 0 3px rgba(109, 127, 115, 0.18);
+}
+
+.gallery-selector-button img,
+.thumb-grid-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #e6ded2;
+}
+
+.thumb-grid-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: clamp(18px, 3vw, 34px);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.thumb-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.thumb-grid-header h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  font-weight: 400;
+}
+
+.thumb-grid {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: clamp(10px, 1.8vw, 18px);
+  padding: 2px 2px 18px;
+}
+
+.thumb-grid-button {
+  aspect-ratio: 4 / 3;
+  padding: 4px;
+  border: 1px solid rgba(184, 150, 93, 0.32);
+  border-radius: 8px;
+  background: rgba(255, 250, 242, 0.86);
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(36, 29, 25, 0.1);
+}
+
+.gallery-modal-card {
+  z-index: 45;
+}
+
 @media (max-width: 720px) {
   .admin-header {
     align-items: stretch;
@@ -701,5 +892,32 @@ h1 {
 
   .password-card {
     padding: 24px;
+  }
+
+  .gallery-link {
+    right: 78px;
+  }
+
+  .gallery-shell {
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .gallery-carousel {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
+  }
+
+  .gallery-feature {
+    height: 52vh;
+  }
+
+  .carousel-button {
+    width: 44px;
+    height: 60px;
+    font-size: 1.45rem;
+  }
+
+  .thumb-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   }
 }

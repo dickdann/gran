@@ -41,6 +41,10 @@ function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
 }
 
+function thumbUrl(file) {
+  return `thumbs/${file.split('/').map(encodeURIComponent).join('/')}`;
+}
+
 function normalizeRotation(value) {
   const numericValue = Number(value) || 0;
   return ((numericValue % 360) + 360) % 360;
@@ -104,7 +108,7 @@ function renderRows() {
       <td><button class="drag-handle" type="button" aria-label="Move ${slide.file}">::</button></td>
       <td>
         <button class="thumbnail-button" type="button" data-open-photo="${slide.file}" aria-label="Open ${slide.file} in full size">
-          <img class="admin-thumb" src="${assetUrl(slide.file)}" alt="Preview of ${slide.file}" style="transform: ${rotationStyle(slide.rotation)}; transform-origin: center center;">
+          <img class="admin-thumb" src="${thumbUrl(slide.file)}" alt="Preview of ${slide.file}" style="transform: ${rotationStyle(slide.rotation)}; transform-origin: center center;">
         </button>
       </td>
       <td class="filename-cell">${slide.file}</td>

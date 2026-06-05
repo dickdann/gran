@@ -146,6 +146,25 @@ function ensureThumbsDir() {
   fs.mkdirSync(thumbsDir, { recursive: true });
 }
 
+function uniqueUploadFilename(originalFilename = '', ext = '', reservedNames = new Set()) {
+  const parsedOriginal = path.parse(String(originalFilename || '').trim());
+  const extension = (parsedOriginal.ext || ext || '').toLowerCase();
+  const baseName = (parsedOriginal.name || '').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  const fallbackName = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const safeBaseName = baseName || fallbackName;
+
+  let candidate = `${safeBaseName}${extension}`;
+  let counter = 1;
+
+  while (reservedNames.has(candidate) || fs.existsSync(path.join(assetsDir, candidate))) {
+    candidate = `${safeBaseName}-${counter}${extension}`;
+    counter += 1;
+  }
+
+  reservedNames.add(candidate);
+  return candidate;
+}
+
 function thumbnailPathFor(filePath) {
   const relativePath = path.relative(assetsDir, filePath);
   return path.join(thumbsDir, relativePath);
@@ -542,13 +561,13 @@ async function handleApi(request, response, pathname) {
     }
 
     try {
+      const reservedUploadNames = new Set();
       const form = formidable({
         multiples: true,
         uploadDir: assetsDir,
         keepExtensions: true,
         filename: (name, ext, part, form) => {
-          const original = (part.originalFilename || '').replace(/[^a-zA-Z0-9._-]/g, '_');
-          return original || `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+          return uniqueUploadFilename(part.originalFilename || '', ext, reservedUploadNames);
         }
       });
 
