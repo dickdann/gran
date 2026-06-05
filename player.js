@@ -31,7 +31,7 @@ function assetUrl(file) {
 function clearTransitionClasses(layer) {
   Object.values(transitionClasses).forEach((className) => layer.classList.remove(className));
   layer.classList.remove('entering');
-  layer.classList.remove('exiting');
+  layer.classList.remove('leaving');
   layer.classList.remove('preparing');
 }
 
@@ -58,32 +58,36 @@ function showSlide(index, instant = false) {
   const transitionClass = transitionClasses[slide.transition] || transitionClasses['fade-in'];
 
   window.clearTimeout(transitionCleanupTimer);
-  clearTransitionClasses(nextLayer);
-  nextLayer.src = assetUrl(slide.file);
-  applyRotation(nextLayer, slide);
 
   if (instant) {
-    nextLayer.className = 'slide-image active';
-    currentLayer.classList.remove('active');
     clearTransitionClasses(currentLayer);
-    activeLayer = 1 - activeLayer;
+    clearTransitionClasses(nextLayer);
+    currentLayer.src = assetUrl(slide.file);
+    applyRotation(currentLayer, slide);
+    currentLayer.className = 'slide-image active';
+    nextLayer.className = 'slide-image';
+    nextLayer.removeAttribute('src');
     currentIndex = slideIndex;
     window.clearTimeout(timer);
     timer = window.setTimeout(nextSlide, Math.max(2, Number(slide.duration) || 6) * 1000);
     return;
   }
 
+  clearTransitionClasses(nextLayer);
+  nextLayer.src = assetUrl(slide.file);
+  applyRotation(nextLayer, slide);
+
   isTransitioning = true;
   nextLayer.className = `slide-image preparing entering ${transitionClass}`;
-  currentLayer.classList.add('exiting');
-  currentLayer.classList.remove('active');
   nextLayer.getBoundingClientRect();
 
   requestAnimationFrame(() => {
     nextLayer.classList.remove('preparing');
     nextLayer.classList.add('active');
+    currentLayer.classList.add('leaving');
     transitionCleanupTimer = window.setTimeout(() => {
       clearTransitionClasses(nextLayer);
+      currentLayer.classList.remove('active');
       clearTransitionClasses(currentLayer);
       currentLayer.removeAttribute('src');
       isTransitioning = false;
