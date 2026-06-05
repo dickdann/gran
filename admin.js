@@ -483,12 +483,14 @@ function updateShrinkProgress(eventData) {
   if (eventData.type === 'start') {
     showShrinkProgress(eventData.total, 0);
     saveStatus.textContent = `Preparing to shrink ${eventData.total || 0} photo(s)...`;
+    console.log(`Starting shrink of ${eventData.total || 0} photo(s)...`);
     return;
   }
 
   if (eventData.type === 'progress') {
     showShrinkProgress(eventData.total, eventData.processed);
     saveStatus.textContent = `Shrinking photos... ${eventData.processed || 0}/${eventData.total || 0}`;
+    console.log(`Shrinking photos... ${eventData.processed || 0}/${eventData.total || 0}`);
   }
 }
 
