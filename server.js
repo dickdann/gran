@@ -19,6 +19,7 @@ const adminPassword = process.env.PASSWORD || 'morag79';
 const adminToken = require('crypto').randomBytes(32).toString('hex');
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif']);
 const transitionTypes = ['fade-in', 'fade-through', 'dissolve', 'slide-left', 'slide-right', 'slide-up', 'zoom-in', 'zoom-out', 'blur-fade', 'lift'];
+const defaultTransitionDuration = 1.8;
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -132,6 +133,10 @@ function normalizeRotation(value) {
   return ((numericValue % 360) + 360) % 360;
 }
 
+function normalizeTransitionDuration(value) {
+  return Math.max(0.5, Math.min(8, Number(value) || defaultTransitionDuration));
+}
+
 function ensureThumbsDir() {
   fs.mkdirSync(thumbsDir, { recursive: true });
 }
@@ -227,7 +232,7 @@ function mergedConfig() {
   const photoSet = new Set(photos);
   const hero = photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '';
 
-  return { hero, slides };
+  return { hero, transitionDuration: normalizeTransitionDuration(saved?.transitionDuration), slides };
 }
 
 function readBody(request) {
@@ -254,6 +259,7 @@ function rebuildConfigFromAssets() {
 
   const config = {
     hero: photoSet.has(saved?.hero) ? saved.hero : slides[0]?.file || '',
+    transitionDuration: normalizeTransitionDuration(saved?.transitionDuration),
     slides
   };
 
@@ -296,6 +302,7 @@ function saveConfig(payload) {
 
   const config = {
     hero: photoSet.has(payload.hero) ? payload.hero : orderedSlides[0]?.file || '',
+    transitionDuration: normalizeTransitionDuration(payload.transitionDuration),
     slides: orderedSlides
   };
 

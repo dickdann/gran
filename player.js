@@ -9,7 +9,7 @@ let timer = null;
 let transitionCleanupTimer = null;
 let isTransitioning = false;
 
-const transitionDurationMs = 1800;
+let transitionDurationMs = 1800;
 
 const transitionClasses = {
   'fade-in': 'enter-fade-in',
@@ -26,6 +26,15 @@ const transitionClasses = {
 
 function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function normalizeTransitionDuration(value) {
+  return Math.max(0.5, Math.min(8, Number(value) || 1.8));
+}
+
+function applyTransitionDuration(value) {
+  transitionDurationMs = normalizeTransitionDuration(value) * 1000;
+  stage.style.setProperty('--transition-duration', `${transitionDurationMs}ms`);
 }
 
 function clearTransitionClasses(layer) {
@@ -118,6 +127,7 @@ async function start() {
   const response = await fetch('/api/config');
   const config = await response.json();
   slides = (config.slides || []).filter((slide) => !slide.hidden);
+  applyTransitionDuration(config.transitionDuration);
 
   if (!slides.length) {
     stage.dataset.message = 'No photos found';

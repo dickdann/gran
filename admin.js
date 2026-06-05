@@ -19,6 +19,7 @@ const passwordError = document.getElementById('passwordError');
 const photoRows = document.getElementById('photoRows');
 const saveButton = document.getElementById('saveButton');
 const saveStatus = document.getElementById('saveStatus');
+const transitionDurationInput = document.getElementById('transitionDurationInput');
 const uploadInput = document.getElementById('photoUploadInput');
 const uploadDropzone = document.getElementById('uploadDropzone');
 const uploadStatus = document.getElementById('uploadStatus');
@@ -30,8 +31,20 @@ const photoDeleteButton = document.getElementById('photoDeleteButton');
 
 let slides = [];
 let hero = '';
+let transitionDuration = 1.8;
 let draggedIndex = null;
 let autoSaveTimer = null;
+
+function normalizeTransitionDuration(value) {
+  return Math.max(0.5, Math.min(8, Number(value) || 1.8));
+}
+
+function applyConfig(config) {
+  slides = config.slides || [];
+  hero = config.hero || slides[0]?.file || '';
+  transitionDuration = normalizeTransitionDuration(config.transitionDuration);
+  transitionDurationInput.value = transitionDuration;
+}
 
 function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
@@ -130,6 +143,7 @@ function closePhotoModal() {
 
 function captureRows() {
   const rows = Array.from(photoRows.querySelectorAll('tr'));
+  transitionDuration = normalizeTransitionDuration(transitionDurationInput.value);
   slides = rows.map((row) => {
     const currentSlide = slides[Number(row.dataset.index)];
     return {
@@ -151,20 +165,19 @@ async function loadConfig() {
   }
 
   const config = await response.json();
-  slides = config.slides || [];
-  hero = config.hero || slides[0]?.file || '';
+  applyConfig(config);
   renderRows();
   saveStatus.textContent = `${slides.length} photos ready.`;
 }
 
-async function persistConfig(nextSlides = slides, nextHero = hero) {
+async function persistConfig(nextSlides = slides, nextHero = hero, nextTransitionDuration = transitionDuration) {
   const response = await fetch('/api/config', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getAuthToken() || ''}`
     },
-    body: JSON.stringify({ hero: nextHero, slides: nextSlides })
+    body: JSON.stringify({ hero: nextHero, transitionDuration: nextTransitionDuration, slides: nextSlides })
   });
 
   if (!response.ok) {
@@ -177,8 +190,7 @@ async function persistConfig(nextSlides = slides, nextHero = hero) {
   }
 
   const config = await response.json();
-  slides = config.slides || [];
-  hero = config.hero || slides[0]?.file || '';
+  applyConfig(config);
   renderRows();
   return config;
 }
@@ -193,7 +205,7 @@ function queueAutoSave() {
     captureRows();
     saveStatus.textContent = 'Saving changes...';
 
-    const config = await persistConfig(slides, hero);
+    const config = await persistConfig(slides, hero, transitionDuration);
     if (config) {
       saveStatus.textContent = 'Changes saved automatically.';
     }
@@ -205,7 +217,7 @@ async function saveConfig() {
   saveButton.disabled = true;
   saveStatus.textContent = 'Saving...';
 
-  const config = await persistConfig(slides, hero);
+  const config = await persistConfig(slides, hero, transitionDuration);
   if (config) {
     saveStatus.textContent = 'Saved.';
   }
@@ -332,6 +344,8 @@ photoRows.addEventListener('change', (event) => {
   }
 });
 
+transitionDurationInput.addEventListener('input', queueAutoSave);
+
 photoModal.addEventListener('click', (event) => {
   if (event.target === photoModal) {
     closePhotoModal();
@@ -355,7 +369,7 @@ photoRotateButton.addEventListener('click', async () => {
   photoModalImage.style.transform = rotationStyle(slide.rotation);
   saveStatus.textContent = 'Rotating photo...';
 
-  const config = await persistConfig(slides, hero);
+  const config = await persistConfig(slides, hero, transitionDuration);
   if (config) {
     saveStatus.textContent = `Rotated ${file}.`;
   }
@@ -390,8 +404,7 @@ photoDeleteButton.addEventListener('click', async () => {
       throw new Error(data.error || 'Delete failed.');
     }
 
-    slides = data.config?.slides || [];
-    hero = data.config?.hero || slides[0]?.file || '';
+    applyConfig(data.config || {});
     renderRows();
     closePhotoModal();
     saveStatus.textContent = 'Photo deleted.';
