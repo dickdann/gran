@@ -46,6 +46,21 @@ a {
   overflow: hidden;
 }
 
+.home-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: #0e0d0b;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.home-page.launching-player::before {
+  opacity: 1;
+}
+
 .home-shell {
   min-height: 100vh;
   display: grid;

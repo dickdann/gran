@@ -48,6 +48,37 @@ function applyRotation(layer, slide) {
   layer.style.setProperty('--photo-rotation', `${Number(slide?.rotation) || 0}deg`);
 }
 
+async function waitForImage(layer) {
+  if (layer.complete && layer.naturalWidth > 0) {
+    try {
+      await layer.decode();
+    } catch (error) {
+      // The image is already usable; decode can reject for cached or unsupported images.
+    }
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const finish = () => {
+      layer.removeEventListener('load', finish);
+      layer.removeEventListener('error', finish);
+      resolve();
+    };
+
+    layer.addEventListener('load', finish);
+    layer.addEventListener('error', finish);
+  });
+}
+
+async function prepareInitialSlide(slide) {
+  const layer = layers[activeLayer];
+  clearTransitionClasses(layer);
+  layer.className = 'slide-image preparing';
+  layer.src = assetUrl(slide.file);
+  applyRotation(layer, slide);
+  await waitForImage(layer);
+}
+
 function showSlide(index, instant = false) {
   if (!slides.length) {
     stage.classList.add('empty-stage');
@@ -134,7 +165,7 @@ async function start() {
     return;
   }
 
-  applyRotation(layers[activeLayer], slides[0]);
+  await prepareInitialSlide(slides[0]);
   showSlide(0, true);
   requestFullscreen();
 }

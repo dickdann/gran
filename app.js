@@ -27,6 +27,9 @@ async function loadHome() {
 }
 
 async function openPlayer() {
+  document.body.classList.add('launching-player');
+  playButton.disabled = true;
+
   try {
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
       await document.documentElement.requestFullscreen();
@@ -35,7 +38,7 @@ async function openPlayer() {
     sessionStorage.setItem('requestFullscreenOnPlay', 'true');
   }
 
-  window.location.href = 'play.html';
+  window.location.assign('play.html');
 }
 
 playButton.addEventListener('click', openPlayer);

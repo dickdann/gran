@@ -376,7 +376,11 @@ function syncConfigWithAssets(context, options = {}) {
     fs.writeFileSync(configPath, report.nextConfigText);
   }
 
-  if (options.log !== false) {
+  if (options.log === 'fixes') {
+    if (shouldLogConfigFix(report)) {
+      logConfigSync(context, report, wroteConfig);
+    }
+  } else if (options.log !== false) {
     logConfigSync(context, report, wroteConfig);
   }
 
@@ -388,7 +392,7 @@ function shouldLogConfigFix(report) {
 }
 
 function mergedConfig() {
-  return syncConfigWithAssets('api/config', { log: false });
+  return syncConfigWithAssets('api/config', { log: 'fixes' });
 }
 
 function readBody(request) {
