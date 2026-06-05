@@ -6,6 +6,7 @@ const downloadMainButton = document.getElementById('downloadMainButton');
 const openThumbGridButton = document.getElementById('openThumbGridButton');
 const closeThumbGridButton = document.getElementById('closeThumbGridButton');
 const gallerySelector = document.getElementById('gallerySelector');
+const galleryCarousel = document.querySelector('.gallery-carousel');
 const thumbGridPanel = document.getElementById('thumbGridPanel');
 const thumbGrid = document.getElementById('thumbGrid');
 const galleryModal = document.getElementById('galleryModal');
@@ -15,6 +16,8 @@ const downloadModalButton = document.getElementById('downloadModalButton');
 
 let slides = [];
 let currentIndex = 0;
+let touchStartX = null;
+let touchStartY = null;
 
 function assetUrl(file) {
   return `assets/${file.split('/').map(encodeURIComponent).join('/')}`;
@@ -152,6 +155,51 @@ function closeModal() {
   }
 }
 
+function handleCarouselTouchStart(event) {
+  if (!slides.length || !galleryModal.hidden || !thumbGridPanel.hidden) {
+    return;
+  }
+
+  const touch = event.touches[0];
+  if (!touch) {
+    return;
+  }
+
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}
+
+function handleCarouselTouchEnd(event) {
+  if (touchStartX === null || touchStartY === null || !slides.length || !galleryModal.hidden || !thumbGridPanel.hidden) {
+    touchStartX = null;
+    touchStartY = null;
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  if (!touch) {
+    touchStartX = null;
+    touchStartY = null;
+    return;
+  }
+
+  const deltaX = touch.clientX - touchStartX;
+  const deltaY = touch.clientY - touchStartY;
+  touchStartX = null;
+  touchStartY = null;
+
+  if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+    return;
+  }
+
+  if (deltaX < 0) {
+    showPhoto(currentIndex + 1);
+    return;
+  }
+
+  showPhoto(currentIndex - 1);
+}
+
 async function loadGallery() {
   const response = await fetch('/api/config');
   if (!response.ok) {
@@ -180,6 +228,8 @@ galleryImage.addEventListener('keydown', (event) => {
     openModal(currentIndex);
   }
 });
+galleryCarousel?.addEventListener('touchstart', handleCarouselTouchStart, { passive: true });
+galleryCarousel?.addEventListener('touchend', handleCarouselTouchEnd, { passive: true });
 
 gallerySelector.addEventListener('click', (event) => {
   const button = event.target.closest('[data-index]');
