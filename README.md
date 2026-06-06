@@ -12,10 +12,19 @@ This project lets you:
 ## Features
 
 - Public home page with a hero photo and slideshow launch button
+- Photo gallery page with a carousel-style main image, counter (X / Y), and Previous/Next arrow buttons
+- Horizontal scrollable thumbnail strip below the carousel for direct navigation to any photo
+- "View all thumbnails" button that opens a full grid overlay panel of all photos
+- Full-screen modal preview that opens when clicking the main carousel image or any thumbnail; dismissable via close button, Escape key, or clicking the backdrop
+- Image rotation support — each photo can have a per-slide rotation applied via CSS transform
 - Admin password-protected area for managing photos
 - Drag-and-drop photo uploads
 - Photo ordering, hero selection, transition, duration, and hide settings
-- Thumbnail preview that opens a larger modal image
+- Download functionality for individual photos (from carousel and modal) and the full gallery
+- Touch swipe navigation on mobile devices (horizontal swipe with 48 px threshold)
+- Keyboard navigation support (arrow keys for carousel, Escape to close modal or thumbnail grid)
+- Responsive design for all screen sizes
+- Site name displayed in the gallery header, injected server-side via the `__SITE_NAME__` placeholder
 
 ## Tech stack
 
@@ -50,11 +59,11 @@ The server uses these environment variables when present:
 - PORT — custom port for the server (default: 3000)
 - PASSWORD — admin password (default: password)
 
-The memorial name is managed from the admin page and saved in `data/config.json`.
 
 ## Project structure
 
 - index.html — public home page
+- gallery.html — photo gallery page with thumbnail grid and modal previews
 - play.html / player.js — slideshow viewer
 - admin.html / admin.js — photo management interface
 - server.js — HTTP server, API routes, and image handling
